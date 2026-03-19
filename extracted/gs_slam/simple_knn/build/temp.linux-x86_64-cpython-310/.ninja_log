@@ -1,0 +1,4 @@
+# ninja log v7
+0	13100	1773804754312159731	/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/gs_slam/simple_knn/build/temp.linux-x86_64-cpython-310/simple_knn.o	707a16617b597dd6
+0	17734	1773804754312159731	/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/gs_slam/simple_knn/build/temp.linux-x86_64-cpython-310/ext.o	c3481c5b58cc527b
+1	45692	1773804754313159752	/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/gs_slam/simple_knn/build/temp.linux-x86_64-cpython-310/spatial.o	30893a7e5d923bba

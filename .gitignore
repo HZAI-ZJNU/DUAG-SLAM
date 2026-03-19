@@ -4,3 +4,9 @@ docs/
 baselines/
 repos/
 instruction-guideline.md
+
+# Unused code
+core/consensus/duagc_optimizer.py
+extracted/mac_consensus/
+extracted/swarm_comm/
+.github/copilot-instructions.md

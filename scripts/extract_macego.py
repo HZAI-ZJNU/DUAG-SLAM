@@ -27,54 +27,38 @@ print("Extracting from MAC-Ego3D → extracted/mac_consensus/")
 print("=" * 60)
 
 # ─── Navigate the repo to find the right files ───
-# MAC-Ego3D structure varies — we list possible paths
-# After cloning, inspect with: find repos/MAC-Ego3D -name "*.py" | head -40
+# MAC-Ego3D structure: no formal consensus module — consensus is implicit via
+# overlap elimination (GICP distance thresholding) + joint rendering optimization.
+# We extract the serialization utilities and the overlap elimination logic.
 
-# Intra-agent Gaussian consensus (temporal coherence within one agent)
-for candidate in [
-    "src/consensus/intra_agent.py",
-    "macego/consensus/intra_agent.py",
-    "consensus/intra_agent.py",
-]:
-    if os.path.exists(os.path.join(SRC, candidate)):
-        extract(candidate, "intra_agent.py",
-                "Intra-agent temporal Gaussian consistency. Keep as-is.")
-        break
-else:
-    LOG.append("  NOTE: intra_agent.py not found at expected paths.")
-    LOG.append("        After cloning, run: find repos/MAC-Ego3D -name '*.py' | sort")
-    LOG.append("        Then update this script with correct path.")
+# Serialization / Gaussian packing (SharedGaussians, SharedTargetPoints, etc.)
+extract("scene/shared_objs.py", "gaussian_utils.py",
+        "Gaussian packing/unpacking (SharedGaussians, SharedTargetPoints). "
+        "Used for inter-process data exchange.")
 
-# Gaussian association (matching Gaussians between views/agents)
-for candidate in [
-    "src/consensus/association.py",
-    "macego/association.py",
-    "src/utils/gaussian_matching.py",
-]:
-    if os.path.exists(os.path.join(SRC, candidate)):
-        extract(candidate, "association.py",
-                "Gaussian spatial matching. We add uncertainty as input.")
-        break
-else:
-    LOG.append("  NOTE: association.py not found at expected paths.")
-    LOG.append("        Will need manual inspection of MAC-Ego3D repo structure.")
+# Overlap elimination (closest to intra-agent consensus)
+# eliminate_overlapped2 in mac_Tracker.py filters new points too close to existing
+# map Gaussians. Also add_from_pcd2_tensor / get_trackable_gaussians_tensor from
+# gaussian_model.py for the accumulation pattern.
+extract("mac_Tracker.py", "intra_agent_consensus.py",
+        "Contains eliminate_overlapped2() — overlap-based Gaussian deduplication. "
+        "MAC-Ego3D's implicit temporal consensus mechanism.")
+
+# Gaussian model (for add_from_pcd2_tensor, get_trackable_gaussians_tensor)
+extract("scene/gaussian_model.py", "mac_gaussian_model.py",
+        "GaussianModel with densification_postfix, add_from_pcd2_tensor, "
+        "get_trackable_gaussians_tensor.")
 
 # SALAD place recognition descriptor
-for candidate in [
-    "src/place_recognition/salad.py",
-    "macego/salad_descriptor.py",
-    "submodules/salad/",
-]:
-    if os.path.exists(os.path.join(SRC, candidate)):
-        LOG.append(f"  NOTED: SALAD descriptor found at {candidate}")
-        LOG.append(f"         Will extract for TTA-PR (Contribution 3) later.")
-        break
+if os.path.exists(os.path.join(SRC, "models/aggregators/salad.py")):
+    LOG.append(f"  NOTED: SALAD descriptor found at models/aggregators/salad.py")
+    LOG.append(f"         Will extract for TTA-PR (Contribution 3) later.")
 
 # ─── What we DO NOT take ───
 LOG.append("")
 LOG.append("  NOT TAKEN: inter_agent consensus / coordinator / server")
 LOG.append("             Reason: THIS IS WHAT WE REPLACE with DUAG-C (our Contribution 1)")
-LOG.append("  NOT TAKEN: training scripts, evaluation scripts")
+LOG.append("  NOT TAKEN: training scripts, evaluation scripts, VPR utils")
 LOG.append("             Reason: We write our own experiment pipeline")
 
 print()

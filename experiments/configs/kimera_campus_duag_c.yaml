@@ -1,0 +1,50 @@
+# experiments/configs/kimera_campus_duag_c.yaml
+experiment_name: "DUAG-C_Kimera_Campus"
+dataset_name: kimera_campus
+dataset:
+  name: kimera_campus
+  path: data/kimera_campus/
+  sequences: ["campus_outdoor_00", "campus_outdoor_01"]
+  scenes: ["campus_outdoor_00", "campus_outdoor_01"]
+  # Run three times with different robot subsets
+  robot_subsets: [[0,1], [0,1,2,3], [0,1,2,3,4,5]]
+  n_agents: 6
+  depth_scale: 1000.0
+  cam:
+    H: 480
+    W: 640
+    fx: 500.0
+    fy: 500.0
+    cx: 320.0
+    cy: 240.0
+
+system:
+  use_fim_weighting: true
+  admm_rho_init: 1.0
+  admm_rho_max: 100.0
+  admm_max_iter: 200
+  admm_tol_primal: 1.0e-3
+  admm_tol_dual: 1.0e-3
+  pose_lr: 0.1
+  lambda_gauss: 1.0
+  gaussian_match_thresh: 0.15
+  fim_window_keyframes: 10
+  max_gaussians: 200000
+  n_init_gaussians: 500
+  device: "cpu"
+
+output:
+  dir: outputs
+  save_trajectory: true
+  save_map: true
+  save_metrics: true
+
+metrics: [ATE_RMSE, RPE_trans, admm_iterations, comm_bytes_total]
+
+validate:
+  ATE_scaling: "sub-linear with N_robots"
+
+hypothesis: "Outdoor generalization and N-robot scaling."
+
+seed: 42
+frame_limit: -1

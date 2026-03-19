@@ -12,13 +12,10 @@
 import os
 
 import numpy as np
-import open3d as o3d
 import torch
-from plyfile import PlyData, PlyElement
-from simple_knn._C import distCUDA2
 from torch import nn
 
-from gaussian_splatting.utils.general_utils import (
+from extracted.gs_slam.general_utils import (
     build_rotation,
     build_scaling_rotation,
     get_expon_lr_func,
@@ -26,9 +23,13 @@ from gaussian_splatting.utils.general_utils import (
     inverse_sigmoid,
     strip_symmetric,
 )
-from gaussian_splatting.utils.graphics_utils import BasicPointCloud, getWorld2View2
-from gaussian_splatting.utils.sh_utils import RGB2SH
-from gaussian_splatting.utils.system_utils import mkdir_p
+from extracted.gs_slam.graphics_utils import BasicPointCloud, getWorld2View2
+from extracted.gs_slam.sh_utils import RGB2SH
+
+
+def mkdir_p(folder_path):
+    import os
+    os.makedirs(folder_path, exist_ok=True)
 
 
 class GaussianModel:
@@ -105,6 +106,7 @@ class GaussianModel:
             self.active_sh_degree += 1
 
     def create_pcd_from_image(self, cam_info, init=False, scale=2.0, depthmap=None):
+        import open3d as o3d
         cam = cam_info
         image_ab = (torch.exp(cam.exposure_a)) * cam.original_image + cam.exposure_b
         image_ab = torch.clamp(image_ab, 0.0, 1.0)
@@ -131,6 +133,8 @@ class GaussianModel:
         return self.create_pcd_from_image_and_depth(cam, rgb, depth, init)
 
     def create_pcd_from_image_and_depth(self, cam, rgb, depth, init=False):
+        import open3d as o3d
+        from simple_knn._C import distCUDA2
         if init:
             downsample_factor = self.config["Dataset"]["pcd_downsample_init"]
         else:
@@ -324,6 +328,7 @@ class GaussianModel:
         return l
 
     def save_ply(self, path):
+        from plyfile import PlyData, PlyElement
         mkdir_p(os.path.dirname(path))
 
         xyz = self._xyz.detach().cpu().numpy()
@@ -375,6 +380,7 @@ class GaussianModel:
         self._opacity = optimizable_tensors["opacity"]
 
     def load_ply(self, path):
+        from plyfile import PlyData, PlyElement
         plydata = PlyData.read(path)
 
         def fetchPly_nocolor(path):
@@ -693,3 +699,17 @@ class GaussianModel:
             viewspace_point_tensor.grad[update_filter, :2], dim=-1, keepdim=True
         )
         self.denom[update_filter] += 1
+
+    def get_fim_params(self) -> dict:
+        """
+        Returns all parameter tensors with requires_grad=True for FIM computation.
+        Called exclusively by core/uncertainty/hessian.py:compute_gaussian_fim().
+        Keys map to GaussianMap field names.
+        """
+        return {
+            'means':     self._xyz.requires_grad_(True),
+            'quats':     self._rotation.requires_grad_(True),
+            'scales':    self._scaling.requires_grad_(True),
+            'opacities': self._opacity.requires_grad_(True),
+            'sh_dc':     self._features_dc.requires_grad_(True),
+        }

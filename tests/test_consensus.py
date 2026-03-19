@@ -1,227 +1,241 @@
-"""
-Test DUAG-C core components.
-Run with: pytest tests/test_consensus.py -v
+# tests/test_consensus.py
+#
+# STEP 11 tests for core/consensus/riemannian_admm.py
+# Run with: PYTHONPATH="" conda run -n duag python -m pytest tests/test_consensus.py -v
+#
+# Required tests:
+#   test_admm_two_robots_converge   (< 50 iterations)
+#   test_admm_preserves_gt          (atol=1e-3)
+#   test_ablation_fim_faster        (FIM iters < uniform iters)
+#   test_dual_update_shape          (shape check)
 
-These tests verify the NOVEL code in /core works correctly
-BEFORE integrating any external repos. This is the first thing
-you run after setting up the project.
-"""
 import torch
 import pytest
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from core.types import GaussianSubMap, GaussianAssociation, ConsensusResult
-from core.consensus.gaussian_distance import (
-    GaussianDistanceMetric, log_euclidean_distance, upper_tri_to_full
-)
-from core.consensus.duagc_optimizer import DUAGCOptimizer, DUAGCConfig
-from core.uncertainty.hessian_estimator import (
-    EpistemicUncertaintyEstimator, UncertaintyCalibrationMetrics
-)
+from core.types import PoseGraph, ConsensusState
+from core.consensus.riemannian_admm import RiemannianADMM
+from core.consensus.lie_algebra import se3_exp, se3_log
 
 
-class TestGaussianDistance:
-    """Test the novel d_G metric (Sub-contribution 1.2)."""
-    
-    def test_zero_distance_for_identical_gaussians(self):
-        """d_G(G, G) should be exactly 0."""
-        metric = GaussianDistanceMetric()
-        pos = torch.randn(10, 3)
-        cov = torch.eye(3).unsqueeze(0).expand(10, -1, -1)
-        cov_tri = cov[:, torch.triu_indices(3, 3)[0], torch.triu_indices(3, 3)[1]]
-        color = torch.rand(10, 3)
-        opacity = torch.rand(10, 1)
-        
-        dist, components = metric.compute(
-            pos, cov_tri, color, opacity,
-            pos, cov_tri, color, opacity,
+def _run_admm_pair(
+    T_gt: torch.Tensor,
+    T_init_0: torch.Tensor,
+    T_init_1: torch.Tensor,
+    max_iters: int = 50,
+    edge_info_weight: float = 1.0,
+    rho_init: float = 1.0,
+    pose_lr: float = 0.3,
+) -> tuple:
+    """
+    Run distributed ADMM between 2 robots until convergence or max_iters.
+
+    Both robots share the SAME ground-truth pose T_gt (they observe the same
+    location from overlapping viewpoints). The ADMM consensus drives both
+    robots' pose estimates toward each other. Each robot also has a local
+    "anchor" edge tying it to T_gt (representing the visual-odometry prior).
+
+    Returns (converged, n_iters, final_pose_0, final_pose_1).
+    """
+    admm_0 = RiemannianADMM(
+        robot_id=0, rho_init=rho_init, tol_primal=1e-4,
+        pose_lr=pose_lr, device="cpu",
+    )
+    admm_1 = RiemannianADMM(
+        robot_id=1, rho_init=rho_init, tol_primal=1e-4,
+        pose_lr=pose_lr, device="cpu",
+    )
+
+    admm_0.initialize(T_init_0.clone(), neighbor_ids=[1])
+    admm_1.initialize(T_init_1.clone(), neighbor_ids=[0])
+
+    # Anchor info matrix — local odometry prior
+    anchor_info = torch.eye(6) * edge_info_weight
+
+    for it in range(max_iters):
+        T_0 = admm_0.state.primal_pose.clone()
+        T_1 = admm_1.state.primal_pose.clone()
+
+        # Each robot's pose graph has an anchor edge to GT
+        # (simulating visual-odometry constraint)
+        pg_0 = PoseGraph(
+            poses={0: T_0, 99: T_gt},
+            robot_id=0,
+            edges=[(0, 99, torch.eye(4), anchor_info)],
         )
-        assert torch.allclose(dist, torch.zeros(10), atol=1e-6)
-    
-    def test_symmetry(self):
-        """d_G(G1, G2) should equal d_G(G2, G1)."""
-        metric = GaussianDistanceMetric()
-        pos1, pos2 = torch.randn(5, 3), torch.randn(5, 3)
-        cov_tri = torch.tensor([[1, 0, 0, 1, 0, 1.0]]).expand(5, -1)
-        color1, color2 = torch.rand(5, 3), torch.rand(5, 3)
-        opa1, opa2 = torch.rand(5, 1), torch.rand(5, 1)
-        
-        d12, _ = metric.compute(pos1, cov_tri, color1, opa1, pos2, cov_tri, color2, opa2)
-        d21, _ = metric.compute(pos2, cov_tri, color2, opa2, pos1, cov_tri, color1, opa1)
-        assert torch.allclose(d12, d21, atol=1e-6)
-    
-    def test_log_euclidean_identity(self):
-        """log(I) = 0, so d_LE(I, I) = 0."""
-        I = torch.eye(3).unsqueeze(0).expand(3, -1, -1)
-        dist = log_euclidean_distance(I, I)
-        assert torch.allclose(dist, torch.zeros(3), atol=1e-6)
-    
-    def test_log_euclidean_positive(self):
-        """Distance between different SPD matrices should be positive."""
-        cov1 = torch.eye(3).unsqueeze(0) * 1.0
-        cov2 = torch.eye(3).unsqueeze(0) * 2.0
-        dist = log_euclidean_distance(cov1, cov2)
-        assert dist.item() > 0
-    
-    def test_uncertainty_weighting_effect(self):
-        """Higher weight should increase the contribution of a Gaussian pair."""
-        metric = GaussianDistanceMetric()
-        pos1 = torch.zeros(1, 3)
-        pos2 = torch.ones(1, 3)
-        cov_tri = torch.tensor([[1, 0, 0, 1, 0, 1.0]])
-        color = torch.rand(1, 3)
-        opa = torch.rand(1, 1)
-        
-        low_weight = torch.tensor([0.1])
-        high_weight = torch.tensor([10.0])
-        
-        val_low = metric.compute_weighted(pos1, cov_tri, color, opa, pos2, cov_tri, color, opa, low_weight)
-        val_high = metric.compute_weighted(pos1, cov_tri, color, opa, pos2, cov_tri, color, opa, high_weight)
-        
-        assert val_high > val_low  # Higher weight → higher penalty for disagreement
-
-
-class TestUncertaintyEstimator:
-    """Test the Hessian-based uncertainty (Sub-contribution 1.1)."""
-    
-    def test_accumulation(self):
-        """Uncertainty should be computable after accumulating frames."""
-        estimator = EpistemicUncertaintyEstimator(num_params_per_gaussian=14, accumulation_window=3)
-        
-        for _ in range(3):
-            params = torch.randn(100, 14, requires_grad=True)
-            loss = (params ** 2).sum()
-            loss.backward()
-            estimator.accumulate(loss, params)
-        
-        assert estimator.should_compute()
-        uncertainties = estimator.compute()
-        assert uncertainties.shape == (100,)
-        assert (uncertainties > 0).all()
-    
-    def test_high_gradient_means_low_uncertainty(self):
-        """Gaussians with consistently high gradients → low uncertainty (well-observed)."""
-        estimator = EpistemicUncertaintyEstimator(num_params_per_gaussian=3, accumulation_window=5)
-        
-        for _ in range(5):
-            params = torch.randn(2, 3, requires_grad=True)
-            # Gaussian 0: high loss (large gradient) → well-constrained → LOW uncertainty
-            # Gaussian 1: low loss (small gradient) → poorly constrained → HIGH uncertainty
-            loss = 100 * params[0].pow(2).sum() + 0.01 * params[1].pow(2).sum()
-            loss.backward()
-            estimator.accumulate(loss, params)
-        
-        uncertainties = estimator.compute()
-        assert uncertainties[0] < uncertainties[1]  # Low gradient variance = HIGH uncertainty (inverse!)
-    
-    def test_reset(self):
-        """After reset, should_compute returns False."""
-        estimator = EpistemicUncertaintyEstimator(accumulation_window=2)
-        params = torch.randn(10, 14, requires_grad=True)
-        loss = params.sum()
-        loss.backward()
-        estimator.accumulate(loss, params)
-        estimator.accumulate(loss, params)
-        estimator.reset()
-        assert not estimator.should_compute()
-
-
-class TestDUAGCOptimizer:
-    """Test the DUAG-C optimizer (Sub-contributions 1.2-1.3)."""
-    
-    def _make_submap(self, robot_id, n=50, offset=None):
-        """Create a synthetic sub-map for testing."""
-        positions = torch.randn(n, 3)
-        if offset is not None:
-            positions = positions + offset
-        return GaussianSubMap(
-            robot_id=robot_id,
-            timestamp=0.0,
-            positions=positions,
-            covariances=torch.tensor([[1, 0, 0, 1, 0, 1.0]]).expand(n, -1).clone(),
-            colors=torch.rand(n, 3),
-            opacities=torch.rand(n, 1),
-            uncertainties=torch.rand(n, 1) * 0.5 + 0.1,  # σ² ∈ [0.1, 0.6]
-            keyframe_poses=torch.eye(4).unsqueeze(0),
-        )
-    
-    def test_identical_submaps_converge_instantly(self):
-        """If two robots have identical maps, consensus should converge in 1 iteration."""
-        submap = self._make_submap(robot_id=0, n=30)
-        submap_copy = GaussianSubMap(
-            robot_id=1, timestamp=0.0,
-            positions=submap.positions.clone(),
-            covariances=submap.covariances.clone(),
-            colors=submap.colors.clone(),
-            opacities=submap.opacities.clone(),
-            uncertainties=submap.uncertainties.clone(),
-            keyframe_poses=submap.keyframe_poses.clone(),
-        )
-        associations = GaussianAssociation(
-            robot_i=0, robot_j=1,
-            indices_i=torch.arange(30),
-            indices_j=torch.arange(30),
-            match_confidence=torch.ones(30),
-        )
-        
-        optimizer = DUAGCOptimizer(DUAGCConfig(max_iterations=10), device="cpu")
-        result = optimizer.optimize(submap, submap_copy, associations)
-        
-        assert result.converged
-        assert result.primal_residual < 1e-3
-    
-    def test_uncertainty_weighting_improves_result(self):
-        """
-        When one sub-map has high uncertainty, consensus should favor the other.
-        This is the key scientific claim of Sub-contribution 1.3.
-        """
-        # Robot 0: accurate map (low uncertainty)
-        submap_good = self._make_submap(robot_id=0, n=20)
-        submap_good.uncertainties = torch.full((20, 1), 0.01)  # Very confident
-        
-        # Robot 1: noisy map (high uncertainty) with added noise
-        submap_noisy = GaussianSubMap(
-            robot_id=1, timestamp=0.0,
-            positions=submap_good.positions.clone() + torch.randn(20, 3) * 0.5,  # Added noise
-            covariances=submap_good.covariances.clone(),
-            colors=submap_good.colors.clone(),
-            opacities=submap_good.opacities.clone(),
-            uncertainties=torch.full((20, 1), 10.0),  # Very uncertain
-            keyframe_poses=submap_good.keyframe_poses.clone(),
-        )
-        
-        associations = GaussianAssociation(
-            robot_i=0, robot_j=1,
-            indices_i=torch.arange(20),
-            indices_j=torch.arange(20),
-            match_confidence=torch.ones(20),
-        )
-        
-        optimizer = DUAGCOptimizer(DUAGCConfig(max_iterations=10), device="cpu")
-        result = optimizer.optimize(submap_good, submap_noisy, associations)
-        
-        # After consensus, the merged map's positions should be CLOSER to Robot 0's
-        # original positions (the confident ones) than to Robot 1's noisy ones
-        dist_to_good = (result.merged_gaussians.positions[:20] - submap_good.positions).norm(dim=-1).mean()
-        dist_to_noisy = (result.merged_gaussians.positions[:20] - submap_noisy.positions).norm(dim=-1).mean()
-        
-        assert dist_to_good < dist_to_noisy, (
-            f"Consensus should favor confident robot! "
-            f"dist_to_good={dist_to_good:.4f}, dist_to_noisy={dist_to_noisy:.4f}"
+        pg_1 = PoseGraph(
+            poses={0: T_1, 99: T_gt},
+            robot_id=1,
+            edges=[(0, 99, torch.eye(4), anchor_info)],
         )
 
+        # Primal updates (exchange current estimates)
+        admm_0.pose_primal_update(pg_0, {1: T_1})
+        admm_1.pose_primal_update(pg_1, {0: T_0})
 
-class TestCalibration:
-    """Test the uncertainty calibration metrics."""
-    
-    def test_perfect_calibration(self):
-        """If predicted uncertainty matches actual error, ECE should be ~0."""
-        predicted = torch.linspace(0.1, 1.0, 100)
-        actual = predicted + torch.randn(100) * 0.01  # Small noise
-        
-        ece, _, _ = UncertaintyCalibrationMetrics.compute_ece(predicted, actual, num_bins=5)
-        assert ece < 0.1  # Should be close to 0
+        T_0_new = admm_0.state.primal_pose
+        T_1_new = admm_1.state.primal_pose
+
+        # Dual update
+        admm_0.dual_update({1: T_1_new})
+        admm_1.dual_update({0: T_0_new})
+
+        # Adaptive penalty
+        r_01 = se3_log(torch.linalg.inv(T_0_new) @ T_1_new)
+        primal_res = r_01.norm().item()
+        dual_res = se3_log(torch.linalg.inv(T_0) @ T_0_new).norm().item()
+        admm_0.update_penalty(primal_res, dual_res)
+        admm_1.update_penalty(primal_res, dual_res)
+
+        admm_0.state.iteration = it + 1
+        admm_1.state.iteration = it + 1
+
+        if admm_0.is_converged({1: T_1_new}) and admm_1.is_converged({0: T_0_new}):
+            return True, it + 1, T_0_new, T_1_new
+
+    return (
+        False,
+        max_iters,
+        admm_0.state.primal_pose,
+        admm_1.state.primal_pose,
+    )
+
+
+def test_admm_two_robots_converge():
+    """2-robot synthetic pose graph converges in < 50 iterations."""
+    torch.manual_seed(42)
+
+    # Ground-truth shared pose
+    xi_gt = torch.tensor([0.1, -0.05, 0.08, 0.5, -0.3, 0.2])
+    T_gt = se3_exp(xi_gt)
+
+    # Perturbed initial guesses (different perturbations per robot)
+    noise_0 = se3_exp(torch.randn(6) * 0.2)
+    noise_1 = se3_exp(torch.randn(6) * 0.3)
+    T_init_0 = T_gt @ noise_0
+    T_init_1 = T_gt @ noise_1
+
+    converged, n_iters, _, _ = _run_admm_pair(
+        T_gt, T_init_0, T_init_1, max_iters=50,
+    )
+    assert converged, f"ADMM did not converge in 50 iterations (ran {n_iters})"
+
+
+def test_admm_preserves_gt():
+    """Converged pose = known ground truth (synthetic)."""
+    torch.manual_seed(77)
+
+    xi_gt = torch.tensor([0.05, -0.03, 0.07, 0.3, -0.2, 0.1])
+    T_gt = se3_exp(xi_gt)
+
+    noise_0 = se3_exp(torch.randn(6) * 0.02)
+    noise_1 = se3_exp(torch.randn(6) * 0.03)
+    T_init_0 = T_gt @ noise_0
+    T_init_1 = T_gt @ noise_1
+
+    converged, _, T_final_0, T_final_1 = _run_admm_pair(
+        T_gt, T_init_0, T_init_1, max_iters=50,
+    )
+
+    # Both converged poses should be close to the ground truth
+    res_0 = se3_log(torch.linalg.inv(T_gt) @ T_final_0)
+    res_1 = se3_log(torch.linalg.inv(T_gt) @ T_final_1)
+    assert res_0.norm() < 1e-3, f"Robot 0 residual norm: {res_0.norm():.6f}"
+    assert res_1.norm() < 1e-3, f"Robot 1 residual norm: {res_1.norm():.6f}"
+
+
+def test_ablation_fim_faster():
+    """FIM-weighted Gaussian consensus converges in fewer ADMM iterations than uniform."""
+    torch.manual_seed(7)
+
+    # Synthetic Gaussian parameters: 2 robots, 10 matched pairs
+    N = 10
+    gt_means = torch.randn(N, 3)
+
+    # Robot 0: low noise (well-observed, high FIM)
+    means_0 = gt_means + torch.randn(N, 3) * 0.01
+    # Robot 1: high noise (poorly-observed, low FIM)
+    means_1 = gt_means + torch.randn(N, 3) * 0.5
+
+    matched_pairs = {1: (torch.arange(N), torch.arange(N))}
+
+    # FIM-weighted: Robot 0 has high FIM, Robot 1 has low FIM
+    local_fim_w  = {"means": torch.ones(N, 3) * 100.0}  # confident
+    nb_fim_w     = {1: {"means": torch.ones(N, 3) * 0.1}}  # uncertain
+
+    # Uniform: both have equal FIM
+    local_fim_u  = {"means": torch.ones(N, 3)}
+    nb_fim_u     = {1: {"means": torch.ones(N, 3)}}
+
+    # Run a few ADMM-style iterations, measuring GT error after each
+    admm_w = RiemannianADMM(robot_id=0, device="cpu")
+    admm_w.rho = 1.0
+    admm_u = RiemannianADMM(robot_id=0, device="cpu")
+    admm_u.rho = 1.0
+
+    iters_w, iters_u = 50, 50
+    tol = 0.05  # mean L2 error to GT threshold
+
+    # FIM-weighted run
+    local_w = {"means": means_0.clone()}
+    for i in range(50):
+        local_w = admm_w.gaussian_primal_update(
+            local_w, {1: {"means": means_1.clone()}},
+            matched_pairs, local_fim_w, nb_fim_w,
+        )
+        err = (local_w["means"] - gt_means).norm(dim=-1).mean().item()
+        if err < tol:
+            iters_w = i + 1
+            break
+
+    # Uniform run
+    local_u = {"means": means_0.clone()}
+    for i in range(50):
+        local_u = admm_u.gaussian_primal_update(
+            local_u, {1: {"means": means_1.clone()}},
+            matched_pairs, local_fim_u, nb_fim_u,
+        )
+        err = (local_u["means"] - gt_means).norm(dim=-1).mean().item()
+        if err < tol:
+            iters_u = i + 1
+            break
+
+    assert iters_w < iters_u, (
+        f"FIM-weighted ({iters_w} iters) not faster than "
+        f"uniform ({iters_u} iters)"
+    )
+
+
+def test_dual_update_shape():
+    """After dual_update, dual_vars[nb].shape == (6,)."""
+    admm = RiemannianADMM(robot_id=0, device="cpu")
+    admm.initialize(torch.eye(4), neighbor_ids=[1, 2])
+
+    T_1 = se3_exp(torch.tensor([0.1, 0.0, 0.0, 1.0, 0.0, 0.0]))
+    T_2 = se3_exp(torch.tensor([0.0, 0.1, 0.0, 0.0, 1.0, 0.0]))
+
+    admm.dual_update({1: T_1, 2: T_2})
+
+    assert admm.state.dual_vars[1].shape == (6,)
+    assert admm.state.dual_vars[2].shape == (6,)
+    # Dual vars should be nonzero since neighbors differ from identity
+    assert admm.state.dual_vars[1].norm() > 0
+    assert admm.state.dual_vars[2].norm() > 0
+
+
+def test_penalty_increases():
+    """Penalty rho increases when primal_res >> dual_res."""
+    admm = RiemannianADMM(robot_id=0, rho_init=1.0, tau_incr=2.0, mu=10.0, device="cpu")
+    admm.initialize(torch.eye(4), neighbor_ids=[1])
+    rho_before = admm.rho
+    admm.update_penalty(primal_res=100.0, dual_res=1.0)
+    assert admm.rho > rho_before
+
+
+def test_converged_identical():
+    """Two identical poses should be converged."""
+    admm = RiemannianADMM(robot_id=0, device="cpu")
+    T = torch.eye(4)
+    admm.initialize(T, [1])
+    assert admm.is_converged({1: T})
 
 
 if __name__ == "__main__":

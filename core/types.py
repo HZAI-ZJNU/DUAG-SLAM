@@ -1,132 +1,83 @@
-"""
-DUAG-SLAM Core Data Types
-==========================
-Every module in the project communicates through these types.
-This is the single source of truth for data structures.
-"""
+# core/types.py
+#
+# This file is the contract between all modules.
+# Change carefully — a change to any shape here propagates everywhere.
+#
+# NOTE on SH storage (verified in repos/MonoGS/gaussian_splatting/scene/gaussian_model.py):
+# MonoGS stores SH as two nn.Parameters:
+#   _features_dc   [N, 1, 3]     degree-0 band
+#   _features_rest [N, K-1, 3]   degrees 1..max_sh_degree, K=(max_sh_degree+1)^2
+# We mirror this split. Do NOT merge into a single tensor.
+#
+# NOTE on quaternions (verified in repos/MonoGS/gaussian_splatting/utils/general_utils.py):
+# MonoGS uses (w, x, y, z) ordering. Index 0 = w (scalar part).
+
 import torch
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Tuple
-import numpy as np
+from dataclasses import dataclass
+from typing import Optional, Dict, List, Tuple
 
 
 @dataclass
-class GaussianPrimitive:
+class GaussianMap:
     """
-    A single 3D Gaussian primitive with uncertainty augmentation.
-    
-    Standard 3DGS attributes (from MonoGS):
-        position:   μ ∈ R³        — center of the Gaussian
-        covariance: Σ ∈ S⁺₃      — 3x3 symmetric positive definite (stored as 6 upper-tri)
-        color:      c ∈ [0,1]³    — RGB color (spherical harmonics degree 0)
-        opacity:    α ∈ [0,1]     — transparency
-    
-    OUR ADDITION (Sub-contribution 1.1):
-        uncertainty: σ² ∈ R⁺      — epistemic uncertainty from Hessian (Eq. 5)
-        observation_count: int    — how many frames observed this Gaussian
+    One robot's local 3DGS map. All tensors on the same device.
+    N = number of Gaussians. Shapes mirror MonoGS internal storage exactly.
     """
-    position: torch.Tensor       # shape: [3]
-    covariance: torch.Tensor     # shape: [6] (upper triangular of 3x3)
-    color: torch.Tensor          # shape: [3]
-    opacity: torch.Tensor        # shape: [1]
-    uncertainty: torch.Tensor    # shape: [1] — OUR NOVEL ADDITION
-    observation_count: int = 0
+    # Geometry
+    means:     torch.Tensor    # [N, 3]    raw 3D positions (_xyz)
+    quats:     torch.Tensor    # [N, 4]    rotation quaternions (_rotation), (w,x,y,z)
+
+    # Appearance
+    scales:    torch.Tensor    # [N, 3]    log-space (_scaling); actual scale = exp(scales)
+    opacities: torch.Tensor    # [N, 1]    logit-space (_opacity); actual = sigmoid(opacities)
+    sh_dc:     torch.Tensor    # [N, 1, 3] degree-0 SH band (_features_dc)
+    sh_rest:   torch.Tensor    # [N, K-1, 3] higher bands (_features_rest); K=(max_sh_degree+1)^2
+                               #           For degree=3 (MonoGS default): [N, 15, 3]
+
+    # Metadata
+    robot_id:  int
+    timestamp: float           # seconds since sequence start
+
+    # Uncertainty (None until compute_gaussian_fim() has run)
+    fim_means:  Optional[torch.Tensor] = None   # [N, 3]
+    fim_quats:  Optional[torch.Tensor] = None   # [N, 4]
+    fim_scales: Optional[torch.Tensor] = None   # [N, 3]
+    fim_opac:   Optional[torch.Tensor] = None   # [N, 1]
+    fim_sh_dc:  Optional[torch.Tensor] = None   # [N, 1, 3]
 
 
 @dataclass
-class GaussianSubMap:
+class PoseGraph:
     """
-    A collection of Gaussians representing one robot's local map.
-    This is what Layer 1 produces and Layer 2/3 consume.
+    Local pose graph for one robot.
+    Edge format verified against repos/dpgo/include/DPGO/RelativeSEMeasurement.h.
     """
+    poses: Dict[int, torch.Tensor]                          # node_id -> [4, 4] SE(3)
+    edges: List[Tuple[int, int, torch.Tensor, torch.Tensor]]
+    # edge = (node_i, node_j, relative_pose [4,4], information_matrix [6,6])
     robot_id: int
-    timestamp: float
-    
-    # All Gaussians stored as batched tensors for GPU efficiency
-    positions: torch.Tensor       # shape: [N, 3]
-    covariances: torch.Tensor     # shape: [N, 6]
-    colors: torch.Tensor          # shape: [N, 3]
-    opacities: torch.Tensor       # shape: [N, 1]
-    uncertainties: torch.Tensor   # shape: [N, 1]  — OUR ADDITION
-    
-    # Associated pose graph
-    keyframe_poses: torch.Tensor  # shape: [K, 4, 4] — SE(3) matrices
-    keyframe_timestamps: List[float] = field(default_factory=list)
-    
-    @property
-    def num_gaussians(self) -> int:
-        return self.positions.shape[0]
-    
-    @property
-    def num_keyframes(self) -> int:
-        return self.keyframe_poses.shape[0]
-    
-    def get_weight(self) -> torch.Tensor:
-        """Consensus weight w_k = 1/σ_k² (Eq. 2). Higher confidence → higher weight."""
-        return 1.0 / self.uncertainties.clamp(min=1e-8)
 
 
 @dataclass
-class GaussianAssociation:
-    """
-    Result of matching Gaussians between two robots' sub-maps.
-    Produced by the association module, consumed by the DUAG-C optimizer.
-    """
-    robot_i: int
-    robot_j: int
-    indices_i: torch.Tensor       # shape: [M] — indices into robot i's sub-map
-    indices_j: torch.Tensor       # shape: [M] — indices into robot j's sub-map
-    match_confidence: torch.Tensor # shape: [M] — how confident each match is
-    
-    @property
-    def num_matches(self) -> int:
-        return self.indices_i.shape[0]
-
-
-@dataclass 
-class ConsensusResult:
-    """Output of the DUAG-C optimizer."""
-    relative_pose: torch.Tensor    # shape: [4, 4] — T_ij relating robot i to robot j
-    merged_gaussians: GaussianSubMap  # The merged/refined sub-map
-    converged: bool                # Did ADMM converge?
-    iterations: int                # How many iterations were used
-    primal_residual: float         # Final primal residual (convergence metric)
-    pose_correction: torch.Tensor  # shape: [K, 4, 4] — corrections to local keyframes
+class ConsensusState:
+    """Per-robot ADMM state. Lives on device."""
+    primal_pose: torch.Tensor            # [4, 4] SE(3) current estimate
+    dual_vars:   Dict[int, torch.Tensor] # neighbor_robot_id -> [6] in se(3)
+    penalty:     float = 1.0            # rho (ADMM penalty)
+    iteration:   int   = 0
 
 
 @dataclass
-class P2PMessage:
+class RobotMessage:
     """
-    What actually gets transmitted between robots over the network.
-    Layer 2 (CAIMUS) produces this from a GaussianSubMap.
+    Atomic message between two robots.
+    Simulation: Python objects passed directly via SimChannel.
+    Real robots: serialized over ROS 2 topics via Swarm-SLAM infrastructure.
     """
-    sender_id: int
+    sender_id:   int
     receiver_id: int
-    timestamp: float
-    
-    # Compressed Gaussian data (CAIMUS selects and compresses)
-    compressed_positions: torch.Tensor   # shape: [M, 3] — M ≤ N (selected subset)
-    compressed_covariances: torch.Tensor # shape: [M, 6]
-    compressed_colors: torch.Tensor      # shape: [M, 3] — may be None in skeleton mode
-    compressed_opacities: torch.Tensor   # shape: [M, 1]
-    compressed_uncertainties: torch.Tensor # shape: [M, 1]
-    
-    # Place recognition descriptors (for TTA-PR)
-    place_descriptors: torch.Tensor      # shape: [K, D] — per-keyframe descriptors
-    
-    # Optional: LoRA adapter weights (for TTA-PR cross-robot distillation)
-    adapter_weights: Optional[Dict[str, torch.Tensor]] = None
-    
-    @property
-    def size_bytes(self) -> int:
-        """Estimate the message size for bandwidth scheduling."""
-        total = 0
-        for attr in [self.compressed_positions, self.compressed_covariances,
-                     self.compressed_colors, self.compressed_opacities,
-                     self.compressed_uncertainties, self.place_descriptors]:
-            if attr is not None:
-                total += attr.numel() * attr.element_size()
-        if self.adapter_weights:
-            for v in self.adapter_weights.values():
-                total += v.numel() * v.element_size()
-        return total
+    msg_type:    str       # "pose_update" | "gaussian_subset" | "loop_closure" | "admm_dual"
+    payload:     bytes
+    timestamp:   float
+    priority:    float = 1.0   # CAIMUS sets this (Contribution 2); 0=drop, 1=send now
+    byte_size:   int   = 0     # filled at send time for bandwidth tracking

@@ -1,0 +1,52 @@
+# experiments/configs/subtmrs_duag_c.yaml
+experiment_name: "DUAG-C_SubT_BW_Sweep"
+dataset_name: subtmrs
+dataset:
+  name: subtmrs
+  path: data/subtmrs/
+  sequences: ["sequence_01", "sequence_02"]
+  scenes: ["sequence_01", "sequence_02"]
+  n_agents: 4
+  depth_scale: 1000.0
+  cam:
+    H: 480
+    W: 640
+    fx: 500.0
+    fy: 500.0
+    cx: 320.0
+    cy: 240.0
+
+# Bandwidth sweep — run experiment 4 times with different bandwidth limits
+bandwidth_sweep_bps: [999999999, 1000000, 500000, 100000]
+# 999999999 = effectively unlimited, 1MB/s, 500KB/s, 100KB/s
+
+system:
+  use_fim_weighting: true
+  admm_rho_init: 1.0
+  admm_rho_max: 100.0
+  admm_max_iter: 100
+  admm_tol_primal: 1.0e-4
+  admm_tol_dual: 1.0e-4
+  pose_lr: 0.1
+  lambda_gauss: 1.0
+  gaussian_match_thresh: 0.10
+  fim_window_keyframes: 10
+  max_gaussians: 100000
+  n_init_gaussians: 500
+  device: "cpu"
+
+output:
+  dir: outputs
+  save_trajectory: true
+  save_map: true
+  save_metrics: true
+
+metrics: [ATE_RMSE, comm_bytes_total, messages_dropped]
+
+validate:
+  ATE_at_unlimited_BW: "<0.20"
+
+hypothesis: "H2 partial: DUAG-C degrades gracefully under bandwidth constraints."
+
+seed: 42
+frame_limit: -1

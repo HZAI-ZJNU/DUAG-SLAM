@@ -1,0 +1,659 @@
+
+---
+events:
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineSystem.cmake:233 (message)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      The system is: Linux - 6.8.0-101-generic - x86_64
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCCompiler.cmake:123 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+      Compiler: /home/wen/.local/share/mamba/envs/ros_env/bin/gcc 
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+      
+      The C compiler identification is GNU, found in:
+        /home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/3.28.3/CompilerIdC/a.out
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCXXCompiler.cmake:126 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+      Compiler: /home/wen/.local/share/mamba/envs/ros_env/bin/c++ 
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
+      
+      The CXX compiler identification is GNU, found in:
+        /home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/3.28.3/CompilerIdCXX/a.out
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    checks:
+      - "Detecting C compiler ABI info"
+    directories:
+      source: "/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-i30Eyg"
+      binary: "/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-i30Eyg"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_C_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-i30Eyg'
+        
+        Run Build Command(s): /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_635a4/fast
+        /usr/bin/gmake  -f CMakeFiles/cmTC_635a4.dir/build.make CMakeFiles/cmTC_635a4.dir/build
+        gmake[1]: Entering directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-i30Eyg'
+        Building C object CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o
+        /home/wen/.local/share/mamba/envs/ros_env/bin/gcc   -v -o CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o -c /home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeCCompilerABI.c
+        Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/specs
+        Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/conda.specs
+        COLLECT_GCC=/home/wen/.local/share/mamba/envs/ros_env/bin/gcc
+        Target: x86_64-conda-linux-gnu
+        Configured with: ../configure --prefix=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho --with-slibdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --libdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --mandir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/man --build=x86_64-conda-linux-gnu --host=x86_64-conda-linux-gnu --target=x86_64-conda-linux-gnu --enable-languages=c,c++,fortran,objc,obj-c++ --enable-__cxa_atexit --disable-libmudflap --enable-libgomp --disable-libssp --enable-libquadmath --enable-libquadmath-support --enable-lto --enable-target-optspace --enable-plugin --enable-gold --disable-nls --disable-bootstrap --disable-multilib --enable-long-long --with-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/x86_64-conda-linux-gnu/sysroot --with-build-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/work/cf-compilers/x86_64-conda-linux-gnu/sysroot --with-native-system-header-dir=/usr/include --with-gxx-include-dir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++ --with-pkgversion='conda-forge gcc 14.3.0-5' --with-bugurl=https://github.com/conda-forge/ctng-compilers-feedstock/issues/new/choose --enable-libsanitizer --enable-default-pie --enable-threads=posix
+        Thread model: posix
+        Supported LTO compression algorithms: zlib
+        gcc version 14.3.0 (conda-forge gcc 14.3.0-5) 
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_635a4.dir/'
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/cc1 -quiet -v -iprefix /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/ -isysroot /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot /home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeCCompilerABI.c -quiet -dumpdir CMakeFiles/cmTC_635a4.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=x86-64 -version -idirafter /home/wen/.local/share/mamba/envs/ros_env/include -o /tmp/ccFsoK1M.s
+        GNU C17 (conda-forge gcc 14.3.0-5) version 14.3.0 (x86_64-conda-linux-gnu)
+        	compiled by GNU C version 15.1.0, GMP version 6.2.1, MPFR version 4.1.0, MPC version 1.2.1, isl version isl-0.24-GMP
+        
+        GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+        ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/include"
+        ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include"
+        ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/local/include"
+        ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed"
+        ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/include"
+        #include "..." search starts here:
+        #include <...> search starts here:
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/include
+         /home/wen/.local/share/mamba/envs/ros_env/include
+        End of search list.
+        Compiler executable checksum: 345817baae17540a9049b51582f47d9b
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_635a4.dir/'
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/as -v --64 -o CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o /tmp/ccFsoK1M.s
+        GNU assembler version 2.44 (x86_64-conda-linux-gnu) using BFD version (GNU Binutils) 2.44
+        COMPILER_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/
+        LIBRARY_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.'
+        Linking C executable cmTC_635a4
+        /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E cmake_link_script CMakeFiles/cmTC_635a4.dir/link.txt --verbose=1
+        /home/wen/.local/share/mamba/envs/ros_env/bin/gcc  -v CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o -o cmTC_635a4 
+        Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/specs
+        Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/conda.specs
+        COLLECT_GCC=/home/wen/.local/share/mamba/envs/ros_env/bin/gcc
+        COLLECT_LTO_WRAPPER=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/lto-wrapper
+        Target: x86_64-conda-linux-gnu
+        Configured with: ../configure --prefix=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho --with-slibdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --libdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --mandir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/man --build=x86_64-conda-linux-gnu --host=x86_64-conda-linux-gnu --target=x86_64-conda-linux-gnu --enable-languages=c,c++,fortran,objc,obj-c++ --enable-__cxa_atexit --disable-libmudflap --enable-libgomp --disable-libssp --enable-libquadmath --enable-libquadmath-support --enable-lto --enable-target-optspace --enable-plugin --enable-gold --disable-nls --disable-bootstrap --disable-multilib --enable-long-long --with-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/x86_64-conda-linux-gnu/sysroot --with-build-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/work/cf-compilers/x86_64-conda-linux-gnu/sysroot --with-native-system-header-dir=/usr/include --with-gxx-include-dir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++ --with-pkgversion='conda-forge gcc 14.3.0-5' --with-bugurl=https://github.com/conda-forge/ctng-compilers-feedstock/issues/new/choose --enable-libsanitizer --enable-default-pie --enable-threads=posix
+        Thread model: posix
+        Supported LTO compression algorithms: zlib
+        gcc version 14.3.0 (conda-forge gcc 14.3.0-5) 
+        COMPILER_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/
+        LIBRARY_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_635a4' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_635a4.'
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/collect2 -disable-new-dtags -plugin /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/liblto_plugin.so -plugin-opt=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/lto-wrapper -plugin-opt=-fresolution=/tmp/ccuEcVSa.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --sysroot=/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_635a4 /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/Scrt1.o /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crti.o /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0 -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../.. -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crtn.o -rpath /home/wen/.local/share/mamba/envs/ros_env/lib -rpath-link /home/wen/.local/share/mamba/envs/ros_env/lib -L /home/wen/.local/share/mamba/envs/ros_env/lib/stubs -L /home/wen/.local/share/mamba/envs/ros_env/lib
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_635a4' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_635a4.'
+        gmake[1]: Leaving directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-i30Eyg'
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:127 (message)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed C implicit include dir info: rv=done
+        found start of include info
+        found start of implicit include info
+          add: [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include]
+          add: [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed]
+          add: [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/include]
+          add: [/home/wen/.local/share/mamba/envs/ros_env/include]
+        end of search list found
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include]
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed]
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/include] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/include]
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/include] ==> [/home/wen/.local/share/mamba/envs/ros_env/include]
+        implicit include dirs: [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/include;/home/wen/.local/share/mamba/envs/ros_env/include]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:159 (message)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed C implicit link information:
+        link line regex: [^( *|.*[/\\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        ignore line: [Change Dir: '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-i30Eyg']
+        ignore line: []
+        ignore line: [Run Build Command(s): /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_635a4/fast]
+        ignore line: [/usr/bin/gmake  -f CMakeFiles/cmTC_635a4.dir/build.make CMakeFiles/cmTC_635a4.dir/build]
+        ignore line: [gmake[1]: Entering directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-i30Eyg']
+        ignore line: [Building C object CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o]
+        ignore line: [/home/wen/.local/share/mamba/envs/ros_env/bin/gcc   -v -o CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o -c /home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeCCompilerABI.c]
+        ignore line: [Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/specs]
+        ignore line: [Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/conda.specs]
+        ignore line: [COLLECT_GCC=/home/wen/.local/share/mamba/envs/ros_env/bin/gcc]
+        ignore line: [Target: x86_64-conda-linux-gnu]
+        ignore line: [Configured with: ../configure --prefix=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho --with-slibdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --libdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --mandir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/man --build=x86_64-conda-linux-gnu --host=x86_64-conda-linux-gnu --target=x86_64-conda-linux-gnu --enable-languages=c c++ fortran objc obj-c++ --enable-__cxa_atexit --disable-libmudflap --enable-libgomp --disable-libssp --enable-libquadmath --enable-libquadmath-support --enable-lto --enable-target-optspace --enable-plugin --enable-gold --disable-nls --disable-bootstrap --disable-multilib --enable-long-long --with-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/x86_64-conda-linux-gnu/sysroot --with-build-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/work/cf-compilers/x86_64-conda-linux-gnu/sysroot --with-native-system-header-dir=/usr/include --with-gxx-include-dir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++ --with-pkgversion='conda-forge gcc 14.3.0-5' --with-bugurl=https://github.com/conda-forge/ctng-compilers-feedstock/issues/new/choose --enable-libsanitizer --enable-default-pie --enable-threads=posix]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib]
+        ignore line: [gcc version 14.3.0 (conda-forge gcc 14.3.0-5) ]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_635a4.dir/']
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/cc1 -quiet -v -iprefix /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/ -isysroot /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot /home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeCCompilerABI.c -quiet -dumpdir CMakeFiles/cmTC_635a4.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=x86-64 -version -idirafter /home/wen/.local/share/mamba/envs/ros_env/include -o /tmp/ccFsoK1M.s]
+        ignore line: [GNU C17 (conda-forge gcc 14.3.0-5) version 14.3.0 (x86_64-conda-linux-gnu)]
+        ignore line: [	compiled by GNU C version 15.1.0  GMP version 6.2.1  MPFR version 4.1.0  MPC version 1.2.1  isl version isl-0.24-GMP]
+        ignore line: []
+        ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+        ignore line: [ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/include"]
+        ignore line: [ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include"]
+        ignore line: [ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/local/include"]
+        ignore line: [ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed"]
+        ignore line: [ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/include"]
+        ignore line: [#include "..." search starts here:]
+        ignore line: [#include <...> search starts here:]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/include]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/include]
+        ignore line: [End of search list.]
+        ignore line: [Compiler executable checksum: 345817baae17540a9049b51582f47d9b]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_635a4.dir/']
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/as -v --64 -o CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o /tmp/ccFsoK1M.s]
+        ignore line: [GNU assembler version 2.44 (x86_64-conda-linux-gnu) using BFD version (GNU Binutils) 2.44]
+        ignore line: [COMPILER_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/]
+        ignore line: [LIBRARY_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.']
+        ignore line: [Linking C executable cmTC_635a4]
+        ignore line: [/home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E cmake_link_script CMakeFiles/cmTC_635a4.dir/link.txt --verbose=1]
+        ignore line: [/home/wen/.local/share/mamba/envs/ros_env/bin/gcc  -v CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o -o cmTC_635a4 ]
+        ignore line: [Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/specs]
+        ignore line: [Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/conda.specs]
+        ignore line: [COLLECT_GCC=/home/wen/.local/share/mamba/envs/ros_env/bin/gcc]
+        ignore line: [COLLECT_LTO_WRAPPER=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/lto-wrapper]
+        ignore line: [Target: x86_64-conda-linux-gnu]
+        ignore line: [Configured with: ../configure --prefix=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho --with-slibdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --libdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --mandir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/man --build=x86_64-conda-linux-gnu --host=x86_64-conda-linux-gnu --target=x86_64-conda-linux-gnu --enable-languages=c c++ fortran objc obj-c++ --enable-__cxa_atexit --disable-libmudflap --enable-libgomp --disable-libssp --enable-libquadmath --enable-libquadmath-support --enable-lto --enable-target-optspace --enable-plugin --enable-gold --disable-nls --disable-bootstrap --disable-multilib --enable-long-long --with-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/x86_64-conda-linux-gnu/sysroot --with-build-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/work/cf-compilers/x86_64-conda-linux-gnu/sysroot --with-native-system-header-dir=/usr/include --with-gxx-include-dir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++ --with-pkgversion='conda-forge gcc 14.3.0-5' --with-bugurl=https://github.com/conda-forge/ctng-compilers-feedstock/issues/new/choose --enable-libsanitizer --enable-default-pie --enable-threads=posix]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib]
+        ignore line: [gcc version 14.3.0 (conda-forge gcc 14.3.0-5) ]
+        ignore line: [COMPILER_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/]
+        ignore line: [LIBRARY_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_635a4' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_635a4.']
+        link line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/collect2 -disable-new-dtags -plugin /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/liblto_plugin.so -plugin-opt=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/lto-wrapper -plugin-opt=-fresolution=/tmp/ccuEcVSa.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --sysroot=/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_635a4 /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/Scrt1.o /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crti.o /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0 -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../.. -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crtn.o -rpath /home/wen/.local/share/mamba/envs/ros_env/lib -rpath-link /home/wen/.local/share/mamba/envs/ros_env/lib -L /home/wen/.local/share/mamba/envs/ros_env/lib/stubs -L /home/wen/.local/share/mamba/envs/ros_env/lib]
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/collect2] ==> ignore
+          arg [-disable-new-dtags] ==> ignore
+          arg [-plugin] ==> ignore
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/liblto_plugin.so] ==> ignore
+          arg [-plugin-opt=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/lto-wrapper] ==> ignore
+          arg [-plugin-opt=-fresolution=/tmp/ccuEcVSa.res] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+          arg [-plugin-opt=-pass-through=-lc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+          arg [--sysroot=/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot] ==> ignore
+          arg [--eh-frame-hdr] ==> ignore
+          arg [-m] ==> ignore
+          arg [elf_x86_64] ==> ignore
+          arg [-dynamic-linker] ==> ignore
+          arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+          arg [-pie] ==> ignore
+          arg [-o] ==> ignore
+          arg [cmTC_635a4] ==> ignore
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/Scrt1.o] ==> obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/Scrt1.o]
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crti.o] ==> obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crti.o]
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o] ==> obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../..] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../..]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib]
+          arg [CMakeFiles/cmTC_635a4.dir/CMakeCCompilerABI.c.o] ==> ignore
+          arg [-lgcc] ==> lib [gcc]
+          arg [--push-state] ==> ignore
+          arg [--as-needed] ==> ignore
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [--pop-state] ==> ignore
+          arg [-lc] ==> lib [c]
+          arg [-lgcc] ==> lib [gcc]
+          arg [--push-state] ==> ignore
+          arg [--as-needed] ==> ignore
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [--pop-state] ==> ignore
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o] ==> obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o]
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crtn.o] ==> obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crtn.o]
+          arg [-rpath] ==> ignore
+          arg [/home/wen/.local/share/mamba/envs/ros_env/lib] ==> ignore
+          arg [-rpath-link] ==> ignore
+          arg [/home/wen/.local/share/mamba/envs/ros_env/lib] ==> ignore
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/lib/stubs] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/lib/stubs]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/lib]
+        collapse obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/Scrt1.o] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/Scrt1.o]
+        collapse obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crti.o] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/crti.o]
+        collapse obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o]
+        collapse obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o]
+        collapse obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crtn.o] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/crtn.o]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../..] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/lib/stubs] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/stubs]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib]
+        implicit libs: [gcc;gcc_s;c;gcc;gcc_s]
+        implicit objs: [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/Scrt1.o;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/crti.o;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/crtn.o]
+        implicit dirs: [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/lib;/home/wen/.local/share/mamba/envs/ros_env/lib;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/lib;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib;/home/wen/.local/share/mamba/envs/ros_env/lib/stubs]
+        implicit fwks: []
+      
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    checks:
+      - "Detecting CXX compiler ABI info"
+    directories:
+      source: "/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-2HAhX6"
+      binary: "/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-2HAhX6"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_CXX_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-2HAhX6'
+        
+        Run Build Command(s): /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_7db46/fast
+        /usr/bin/gmake  -f CMakeFiles/cmTC_7db46.dir/build.make CMakeFiles/cmTC_7db46.dir/build
+        gmake[1]: Entering directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-2HAhX6'
+        Building CXX object CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o
+        /home/wen/.local/share/mamba/envs/ros_env/bin/c++   -v -o CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o -c /home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp
+        Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/specs
+        Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/conda.specs
+        COLLECT_GCC=/home/wen/.local/share/mamba/envs/ros_env/bin/c++
+        Target: x86_64-conda-linux-gnu
+        Configured with: ../configure --prefix=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho --with-slibdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --libdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --mandir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/man --build=x86_64-conda-linux-gnu --host=x86_64-conda-linux-gnu --target=x86_64-conda-linux-gnu --enable-languages=c,c++,fortran,objc,obj-c++ --enable-__cxa_atexit --disable-libmudflap --enable-libgomp --disable-libssp --enable-libquadmath --enable-libquadmath-support --enable-lto --enable-target-optspace --enable-plugin --enable-gold --disable-nls --disable-bootstrap --disable-multilib --enable-long-long --with-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/x86_64-conda-linux-gnu/sysroot --with-build-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/work/cf-compilers/x86_64-conda-linux-gnu/sysroot --with-native-system-header-dir=/usr/include --with-gxx-include-dir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++ --with-pkgversion='conda-forge gcc 14.3.0-5' --with-bugurl=https://github.com/conda-forge/ctng-compilers-feedstock/issues/new/choose --enable-libsanitizer --enable-default-pie --enable-threads=posix
+        Thread model: posix
+        Supported LTO compression algorithms: zlib
+        gcc version 14.3.0 (conda-forge gcc 14.3.0-5) 
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_7db46.dir/'
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/cc1plus -quiet -v -iprefix /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/ -isysroot /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot -D_GNU_SOURCE /home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp -quiet -dumpdir CMakeFiles/cmTC_7db46.dir/ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=x86-64 -version -idirafter /home/wen/.local/share/mamba/envs/ros_env/include -o /tmp/ccKOPFi8.s
+        GNU C++17 (conda-forge gcc 14.3.0-5) version 14.3.0 (x86_64-conda-linux-gnu)
+        	compiled by GNU C version 15.1.0, GMP version 6.2.1, MPFR version 4.1.0, MPC version 1.2.1, isl version isl-0.24-GMP
+        
+        GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+        ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/include"
+        ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++"
+        ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/x86_64-conda-linux-gnu"
+        ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/backward"
+        ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include"
+        ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/local/include"
+        ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed"
+        ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/include"
+        #include "..." search starts here:
+        #include <...> search starts here:
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/x86_64-conda-linux-gnu
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/backward
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/include
+         /home/wen/.local/share/mamba/envs/ros_env/include
+        End of search list.
+        Compiler executable checksum: 21212f3b596241103166ffd657dc2ce8
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_7db46.dir/'
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/as -v --64 -o CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccKOPFi8.s
+        GNU assembler version 2.44 (x86_64-conda-linux-gnu) using BFD version (GNU Binutils) 2.44
+        COMPILER_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/
+        LIBRARY_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.'
+        Linking CXX executable cmTC_7db46
+        /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7db46.dir/link.txt --verbose=1
+        /home/wen/.local/share/mamba/envs/ros_env/bin/c++  -v CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_7db46 
+        Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/specs
+        Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/conda.specs
+        COLLECT_GCC=/home/wen/.local/share/mamba/envs/ros_env/bin/c++
+        COLLECT_LTO_WRAPPER=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/lto-wrapper
+        Target: x86_64-conda-linux-gnu
+        Configured with: ../configure --prefix=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho --with-slibdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --libdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --mandir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/man --build=x86_64-conda-linux-gnu --host=x86_64-conda-linux-gnu --target=x86_64-conda-linux-gnu --enable-languages=c,c++,fortran,objc,obj-c++ --enable-__cxa_atexit --disable-libmudflap --enable-libgomp --disable-libssp --enable-libquadmath --enable-libquadmath-support --enable-lto --enable-target-optspace --enable-plugin --enable-gold --disable-nls --disable-bootstrap --disable-multilib --enable-long-long --with-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/x86_64-conda-linux-gnu/sysroot --with-build-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/work/cf-compilers/x86_64-conda-linux-gnu/sysroot --with-native-system-header-dir=/usr/include --with-gxx-include-dir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++ --with-pkgversion='conda-forge gcc 14.3.0-5' --with-bugurl=https://github.com/conda-forge/ctng-compilers-feedstock/issues/new/choose --enable-libsanitizer --enable-default-pie --enable-threads=posix
+        Thread model: posix
+        Supported LTO compression algorithms: zlib
+        gcc version 14.3.0 (conda-forge gcc 14.3.0-5) 
+        COMPILER_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/
+        LIBRARY_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_7db46' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_7db46.'
+         /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/collect2 -disable-new-dtags -plugin /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/liblto_plugin.so -plugin-opt=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/lto-wrapper -plugin-opt=-fresolution=/tmp/ccd6n0RF.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --sysroot=/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_7db46 /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/Scrt1.o /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crti.o /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0 -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../.. -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crtn.o -rpath /home/wen/.local/share/mamba/envs/ros_env/lib -rpath-link /home/wen/.local/share/mamba/envs/ros_env/lib -L /home/wen/.local/share/mamba/envs/ros_env/lib/stubs -L /home/wen/.local/share/mamba/envs/ros_env/lib
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_7db46' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_7db46.'
+        gmake[1]: Leaving directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-2HAhX6'
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:127 (message)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit include dir info: rv=done
+        found start of include info
+        found start of implicit include info
+          add: [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++]
+          add: [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/x86_64-conda-linux-gnu]
+          add: [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/backward]
+          add: [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include]
+          add: [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed]
+          add: [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/include]
+          add: [/home/wen/.local/share/mamba/envs/ros_env/include]
+        end of search list found
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++]
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/x86_64-conda-linux-gnu] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/x86_64-conda-linux-gnu]
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/backward] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/backward]
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include]
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed]
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/include] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/include]
+        collapse include dir [/home/wen/.local/share/mamba/envs/ros_env/include] ==> [/home/wen/.local/share/mamba/envs/ros_env/include]
+        implicit include dirs: [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/x86_64-conda-linux-gnu;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/backward;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/include;/home/wen/.local/share/mamba/envs/ros_env/include]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:159 (message)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit link information:
+        link line regex: [^( *|.*[/\\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        ignore line: [Change Dir: '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-2HAhX6']
+        ignore line: []
+        ignore line: [Run Build Command(s): /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_7db46/fast]
+        ignore line: [/usr/bin/gmake  -f CMakeFiles/cmTC_7db46.dir/build.make CMakeFiles/cmTC_7db46.dir/build]
+        ignore line: [gmake[1]: Entering directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-2HAhX6']
+        ignore line: [Building CXX object CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o]
+        ignore line: [/home/wen/.local/share/mamba/envs/ros_env/bin/c++   -v -o CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o -c /home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/specs]
+        ignore line: [Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/conda.specs]
+        ignore line: [COLLECT_GCC=/home/wen/.local/share/mamba/envs/ros_env/bin/c++]
+        ignore line: [Target: x86_64-conda-linux-gnu]
+        ignore line: [Configured with: ../configure --prefix=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho --with-slibdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --libdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --mandir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/man --build=x86_64-conda-linux-gnu --host=x86_64-conda-linux-gnu --target=x86_64-conda-linux-gnu --enable-languages=c c++ fortran objc obj-c++ --enable-__cxa_atexit --disable-libmudflap --enable-libgomp --disable-libssp --enable-libquadmath --enable-libquadmath-support --enable-lto --enable-target-optspace --enable-plugin --enable-gold --disable-nls --disable-bootstrap --disable-multilib --enable-long-long --with-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/x86_64-conda-linux-gnu/sysroot --with-build-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/work/cf-compilers/x86_64-conda-linux-gnu/sysroot --with-native-system-header-dir=/usr/include --with-gxx-include-dir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++ --with-pkgversion='conda-forge gcc 14.3.0-5' --with-bugurl=https://github.com/conda-forge/ctng-compilers-feedstock/issues/new/choose --enable-libsanitizer --enable-default-pie --enable-threads=posix]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib]
+        ignore line: [gcc version 14.3.0 (conda-forge gcc 14.3.0-5) ]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_7db46.dir/']
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/cc1plus -quiet -v -iprefix /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/ -isysroot /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot -D_GNU_SOURCE /home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp -quiet -dumpdir CMakeFiles/cmTC_7db46.dir/ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=x86-64 -version -idirafter /home/wen/.local/share/mamba/envs/ros_env/include -o /tmp/ccKOPFi8.s]
+        ignore line: [GNU C++17 (conda-forge gcc 14.3.0-5) version 14.3.0 (x86_64-conda-linux-gnu)]
+        ignore line: [	compiled by GNU C version 15.1.0  GMP version 6.2.1  MPFR version 4.1.0  MPC version 1.2.1  isl version isl-0.24-GMP]
+        ignore line: []
+        ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+        ignore line: [ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/include"]
+        ignore line: [ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++"]
+        ignore line: [ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/x86_64-conda-linux-gnu"]
+        ignore line: [ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/backward"]
+        ignore line: [ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include"]
+        ignore line: [ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/local/include"]
+        ignore line: [ignoring duplicate directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed"]
+        ignore line: [ignoring nonexistent directory "/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/../../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/include"]
+        ignore line: [#include "..." search starts here:]
+        ignore line: [#include <...> search starts here:]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/x86_64-conda-linux-gnu]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++/backward]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/include-fixed]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/include]
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/include]
+        ignore line: [End of search list.]
+        ignore line: [Compiler executable checksum: 21212f3b596241103166ffd657dc2ce8]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_7db46.dir/']
+        ignore line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/as -v --64 -o CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccKOPFi8.s]
+        ignore line: [GNU assembler version 2.44 (x86_64-conda-linux-gnu) using BFD version (GNU Binutils) 2.44]
+        ignore line: [COMPILER_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/]
+        ignore line: [LIBRARY_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.']
+        ignore line: [Linking CXX executable cmTC_7db46]
+        ignore line: [/home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7db46.dir/link.txt --verbose=1]
+        ignore line: [/home/wen/.local/share/mamba/envs/ros_env/bin/c++  -v CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_7db46 ]
+        ignore line: [Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/specs]
+        ignore line: [Reading specs from /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/conda.specs]
+        ignore line: [COLLECT_GCC=/home/wen/.local/share/mamba/envs/ros_env/bin/c++]
+        ignore line: [COLLECT_LTO_WRAPPER=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/lto-wrapper]
+        ignore line: [Target: x86_64-conda-linux-gnu]
+        ignore line: [Configured with: ../configure --prefix=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho --with-slibdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --libdir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib --mandir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/man --build=x86_64-conda-linux-gnu --host=x86_64-conda-linux-gnu --target=x86_64-conda-linux-gnu --enable-languages=c c++ fortran objc obj-c++ --enable-__cxa_atexit --disable-libmudflap --enable-libgomp --disable-libssp --enable-libquadmath --enable-libquadmath-support --enable-lto --enable-target-optspace --enable-plugin --enable-gold --disable-nls --disable-bootstrap --disable-multilib --enable-long-long --with-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/x86_64-conda-linux-gnu/sysroot --with-build-sysroot=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/work/cf-compilers/x86_64-conda-linux-gnu/sysroot --with-native-system-header-dir=/usr/include --with-gxx-include-dir=/home/conda/feedstock_root/build_artifacts/gcc_compilers_1757034136611/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho/lib/gcc/x86_64-conda-linux-gnu/14.3.0/include/c++ --with-pkgversion='conda-forge gcc 14.3.0-5' --with-bugurl=https://github.com/conda-forge/ctng-compilers-feedstock/issues/new/choose --enable-libsanitizer --enable-default-pie --enable-threads=posix]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib]
+        ignore line: [gcc version 14.3.0 (conda-forge gcc 14.3.0-5) ]
+        ignore line: [COMPILER_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/]
+        ignore line: [LIBRARY_PATH=/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/:/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_7db46' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_7db46.']
+        link line: [ /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/collect2 -disable-new-dtags -plugin /home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/liblto_plugin.so -plugin-opt=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/lto-wrapper -plugin-opt=-fresolution=/tmp/ccd6n0RF.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --sysroot=/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o cmTC_7db46 /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/Scrt1.o /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crti.o /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0 -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../.. -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib -L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o /home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crtn.o -rpath /home/wen/.local/share/mamba/envs/ros_env/lib -rpath-link /home/wen/.local/share/mamba/envs/ros_env/lib -L /home/wen/.local/share/mamba/envs/ros_env/lib/stubs -L /home/wen/.local/share/mamba/envs/ros_env/lib]
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/collect2] ==> ignore
+          arg [-disable-new-dtags] ==> ignore
+          arg [-plugin] ==> ignore
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/liblto_plugin.so] ==> ignore
+          arg [-plugin-opt=/home/wen/.local/share/mamba/envs/ros_env/bin/../libexec/gcc/x86_64-conda-linux-gnu/14.3.0/lto-wrapper] ==> ignore
+          arg [-plugin-opt=-fresolution=/tmp/ccd6n0RF.res] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [--sysroot=/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot] ==> ignore
+          arg [--eh-frame-hdr] ==> ignore
+          arg [-m] ==> ignore
+          arg [elf_x86_64] ==> ignore
+          arg [-dynamic-linker] ==> ignore
+          arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+          arg [-pie] ==> ignore
+          arg [-o] ==> ignore
+          arg [cmTC_7db46] ==> ignore
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/Scrt1.o] ==> obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/Scrt1.o]
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crti.o] ==> obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crti.o]
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o] ==> obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../..] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../..]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib]
+          arg [CMakeFiles/cmTC_7db46.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+          arg [-lstdc++] ==> lib [stdc++]
+          arg [-lm] ==> lib [m]
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [-lgcc] ==> lib [gcc]
+          arg [-lc] ==> lib [c]
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [-lgcc] ==> lib [gcc]
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o] ==> obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o]
+          arg [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crtn.o] ==> obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crtn.o]
+          arg [-rpath] ==> ignore
+          arg [/home/wen/.local/share/mamba/envs/ros_env/lib] ==> ignore
+          arg [-rpath-link] ==> ignore
+          arg [/home/wen/.local/share/mamba/envs/ros_env/lib] ==> ignore
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/lib/stubs] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/lib/stubs]
+          arg [-L/home/wen/.local/share/mamba/envs/ros_env/lib] ==> dir [/home/wen/.local/share/mamba/envs/ros_env/lib]
+        collapse obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/Scrt1.o] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/Scrt1.o]
+        collapse obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crti.o] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/crti.o]
+        collapse obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o]
+        collapse obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o]
+        collapse obj [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib/crtn.o] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/crtn.o]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib/../lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib/../lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib/../lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../..] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/bin/../x86_64-conda-linux-gnu/sysroot/usr/lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/lib/stubs] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib/stubs]
+        collapse library dir [/home/wen/.local/share/mamba/envs/ros_env/lib] ==> [/home/wen/.local/share/mamba/envs/ros_env/lib]
+        implicit libs: [stdc++;m;gcc_s;gcc;c;gcc_s;gcc]
+        implicit objs: [/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/Scrt1.o;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/crti.o;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtbeginS.o;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0/crtendS.o;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib/crtn.o]
+        implicit dirs: [/home/wen/.local/share/mamba/envs/ros_env/lib/gcc/x86_64-conda-linux-gnu/14.3.0;/home/wen/.local/share/mamba/envs/ros_env/lib/gcc;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/lib;/home/wen/.local/share/mamba/envs/ros_env/lib;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/lib;/home/wen/.local/share/mamba/envs/ros_env/x86_64-conda-linux-gnu/sysroot/usr/lib;/home/wen/.local/share/mamba/envs/ros_env/lib/stubs]
+        implicit fwks: []
+      
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/FindBLAS.cmake:372 (check_function_exists)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/FindBLAS.cmake:416 (check_blas_libraries)"
+      - "CMakeLists.txt:44 (find_package)"
+    checks:
+      - "Looking for sgemm_"
+    directories:
+      source: "/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-L375HR"
+      binary: "/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-L375HR"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "BLAS_WORKS"
+      cached: true
+      stdout: |
+        Change Dir: '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-L375HR'
+        
+        Run Build Command(s): /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_e4a19/fast
+        /usr/bin/gmake  -f CMakeFiles/cmTC_e4a19.dir/build.make CMakeFiles/cmTC_e4a19.dir/build
+        gmake[1]: Entering directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-L375HR'
+        Building C object CMakeFiles/cmTC_e4a19.dir/CheckFunctionExists.c.o
+        /home/wen/.local/share/mamba/envs/ros_env/bin/gcc   -DCHECK_FUNCTION_EXISTS=sgemm_ -o CMakeFiles/cmTC_e4a19.dir/CheckFunctionExists.c.o -c /home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-L375HR/CheckFunctionExists.c
+        Linking C executable cmTC_e4a19
+        /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E cmake_link_script CMakeFiles/cmTC_e4a19.dir/link.txt --verbose=1
+        /home/wen/.local/share/mamba/envs/ros_env/bin/gcc  -DCHECK_FUNCTION_EXISTS=sgemm_ CMakeFiles/cmTC_e4a19.dir/CheckFunctionExists.c.o -o cmTC_e4a19 
+        /home/wen/.local/share/mamba/envs/ros_env/bin/../lib/gcc/x86_64-conda-linux-gnu/14.3.0/../../../../x86_64-conda-linux-gnu/bin/ld: CMakeFiles/cmTC_e4a19.dir/CheckFunctionExists.c.o: in function `main':
+        CheckFunctionExists.c:(.text+0x10): undefined reference to `sgemm_'
+        collect2: error: ld returned 1 exit status
+        gmake[1]: *** [CMakeFiles/cmTC_e4a19.dir/build.make:99: cmTC_e4a19] Error 1
+        gmake[1]: Leaving directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-L375HR'
+        gmake: *** [Makefile:127: cmTC_e4a19/fast] Error 2
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake:101 (try_compile)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CheckCSourceCompiles.cmake:52 (cmake_check_source_compiles)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/FindThreads.cmake:97 (CHECK_C_SOURCE_COMPILES)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/FindThreads.cmake:163 (_threads_check_libc)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/FindBLAS.cmake:470 (find_package)"
+      - "CMakeLists.txt:44 (find_package)"
+    checks:
+      - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
+    directories:
+      source: "/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-6raaZa"
+      binary: "/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-6raaZa"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_HAVE_LIBC_PTHREAD"
+      cached: true
+      stdout: |
+        Change Dir: '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-6raaZa'
+        
+        Run Build Command(s): /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_51f57/fast
+        /usr/bin/gmake  -f CMakeFiles/cmTC_51f57.dir/build.make CMakeFiles/cmTC_51f57.dir/build
+        gmake[1]: Entering directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-6raaZa'
+        Building C object CMakeFiles/cmTC_51f57.dir/src.c.o
+        /home/wen/.local/share/mamba/envs/ros_env/bin/gcc -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_51f57.dir/src.c.o -c /home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-6raaZa/src.c
+        Linking C executable cmTC_51f57
+        /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E cmake_link_script CMakeFiles/cmTC_51f57.dir/link.txt --verbose=1
+        /home/wen/.local/share/mamba/envs/ros_env/bin/gcc CMakeFiles/cmTC_51f57.dir/src.c.o -o cmTC_51f57 
+        gmake[1]: Leaving directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-6raaZa'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/FindBLAS.cmake:372 (check_function_exists)"
+      - "/home/wen/.local/share/mamba/envs/ros_env/share/cmake-3.28/Modules/FindBLAS.cmake:1318 (check_blas_libraries)"
+      - "CMakeLists.txt:44 (find_package)"
+    checks:
+      - "Looking for sgemm_"
+    directories:
+      source: "/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-MrAcOt"
+      binary: "/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-MrAcOt"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "BLAS_blas_WORKS"
+      cached: true
+      stdout: |
+        Change Dir: '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-MrAcOt'
+        
+        Run Build Command(s): /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_efb6a/fast
+        /usr/bin/gmake  -f CMakeFiles/cmTC_efb6a.dir/build.make CMakeFiles/cmTC_efb6a.dir/build
+        gmake[1]: Entering directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-MrAcOt'
+        Building C object CMakeFiles/cmTC_efb6a.dir/CheckFunctionExists.c.o
+        /home/wen/.local/share/mamba/envs/ros_env/bin/gcc   -DCHECK_FUNCTION_EXISTS=sgemm_ -o CMakeFiles/cmTC_efb6a.dir/CheckFunctionExists.c.o -c /home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-MrAcOt/CheckFunctionExists.c
+        Linking C executable cmTC_efb6a
+        /home/wen/.local/share/mamba/envs/ros_env/bin/cmake -E cmake_link_script CMakeFiles/cmTC_efb6a.dir/link.txt --verbose=1
+        /home/wen/.local/share/mamba/envs/ros_env/bin/gcc  -DCHECK_FUNCTION_EXISTS=sgemm_ CMakeFiles/cmTC_efb6a.dir/CheckFunctionExists.c.o -o cmTC_efb6a  /home/wen/.local/share/mamba/envs/ros_env/lib/libblas.so 
+        gmake[1]: Leaving directory '/home/wen/Desktop/Project-Slam/C1-DAUG/DUAG-SLAM/extracted/dpgo_wrapper/build/CMakeFiles/CMakeScratch/TryCompile-MrAcOt'
+        
+      exitCode: 0
+...

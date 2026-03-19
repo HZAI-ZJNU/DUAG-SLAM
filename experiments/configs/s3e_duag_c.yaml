@@ -1,0 +1,58 @@
+# experiments/configs/s3e_duag_c.yaml
+experiment_name: "DUAG-C_S3E"
+dataset_name: s3e
+dataset:
+  name: s3e
+  path: data/s3e/
+  # All 18 sequences grouped by paradigm:
+  paradigms:
+    concentric_circles: ["outdoor_01", "outdoor_02", "outdoor_03"]
+    parallel_lines:     ["outdoor_04", "outdoor_05", "outdoor_06"]
+    crossing:           ["outdoor_07", "outdoor_08", "outdoor_09", "outdoor_10"]
+    leader_follower:    ["outdoor_11", "outdoor_12", "outdoor_13"]
+    indoor:             ["indoor_01", "indoor_02", "indoor_03", "indoor_04", "indoor_05"]
+  scenes: ["outdoor_01", "outdoor_02", "outdoor_03", "outdoor_04", "outdoor_05",
+           "outdoor_06", "outdoor_07", "outdoor_08", "outdoor_09", "outdoor_10",
+           "outdoor_11", "outdoor_12", "outdoor_13",
+           "indoor_01", "indoor_02", "indoor_03", "indoor_04", "indoor_05"]
+  n_agents: 3
+  depth_scale: 1000.0
+  cam:
+    H: 480
+    W: 640
+    fx: 500.0
+    fy: 500.0
+    cx: 320.0
+    cy: 240.0
+
+system:
+  use_fim_weighting: true
+  admm_rho_init: 1.0
+  admm_rho_max: 100.0
+  admm_max_iter: 150
+  admm_tol_primal: 5.0e-4
+  admm_tol_dual: 5.0e-4
+  pose_lr: 0.1
+  lambda_gauss: 1.0
+  gaussian_match_thresh: 0.10   # looser threshold for outdoor scenes
+  fim_window_keyframes: 10
+  max_gaussians: 150000
+  n_init_gaussians: 500
+  device: "cpu"
+
+output:
+  dir: outputs
+  save_trajectory: true
+  save_map: true
+  save_metrics: true
+
+metrics: [ATE_RMSE, RPE_trans, admm_iterations, loop_closure_precision, loop_closure_recall]
+
+validate:
+  ATE_RMSE_concentric: "<0.15"
+  ATE_RMSE_parallel: "<0.30"
+
+hypothesis: "H4: DUAG-C degrades gracefully with reduced robot overlap."
+
+seed: 42
+frame_limit: -1
