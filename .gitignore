@@ -5,6 +5,11 @@ baselines/
 repos/
 instruction-guideline.md
 
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
 # Unused code
 core/consensus/duagc_optimizer.py
 extracted/mac_consensus/
