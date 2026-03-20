@@ -333,16 +333,64 @@ class RobotNode:
 
     def _compute_synthetic_fim(self) -> None:
         """
-        Compute FIM weights based on distance from current camera position.
-        Closer Gaussians are better observed → higher FIM.
-        Overwrites each call (snapshot of current observability).
+        Frustum-based accumulated FIM: project Gaussians into each camera's
+        frustum across the full trajectory, accumulate 1/(1+z²) for visible
+        Gaussians. Prune Gaussians never observed by any camera.
         """
-        cam_pos = self.current_pose[:3, 3]
-        dists = (self.gaussian_map.means - cam_pos.unsqueeze(0)).norm(dim=1, keepdim=True)
-        fim_weight = 1.0 / (1.0 + dists ** 2)
+        means = self.gaussian_map.means  # [N, 3]
+        N = means.shape[0]
+        if N == 0:
+            return
 
-        self.gaussian_map.fim_means = fim_weight.expand(-1, 3)
-        self.gaussian_map.fim_quats = fim_weight.expand(-1, 4)
-        self.gaussian_map.fim_scales = fim_weight.expand(-1, 3)
-        self.gaussian_map.fim_opac = fim_weight
-        self.gaussian_map.fim_sh_dc = fim_weight.unsqueeze(-1).expand(-1, 1, 3)
+        # Fallback to distance-based FIM if camera intrinsics unavailable
+        if not hasattr(self, '_camera_intrinsics'):
+            cam_pos = self.current_pose[:3, 3]
+            dists = (means - cam_pos.unsqueeze(0)).norm(dim=1, keepdim=True)
+            fim_weight = 1.0 / (1.0 + dists ** 2)
+            self.gaussian_map.fim_means = fim_weight.expand(-1, 3)
+            self.gaussian_map.fim_quats = fim_weight.expand(-1, 4)
+            self.gaussian_map.fim_scales = fim_weight.expand(-1, 3)
+            self.gaussian_map.fim_opac = fim_weight
+            self.gaussian_map.fim_sh_dc = fim_weight.unsqueeze(-1).expand(-1, 1, 3)
+            return
+
+        fx, fy, cx, cy = self._camera_intrinsics
+        H, W = self._image_size
+
+        fim_total = torch.zeros(N, device=self.device)
+        with torch.no_grad():
+            for pose in self.pose_graph.poses.values():
+                w2c = torch.linalg.inv(pose)
+                pts_cam = (w2c[:3, :3] @ means.T).T + w2c[:3, 3]  # [N, 3]
+                z = pts_cam[:, 2]
+                z_safe = z.clamp(min=0.01)
+                u = fx * pts_cam[:, 0] / z_safe + cx
+                v = fy * pts_cam[:, 1] / z_safe + cy
+                in_frustum = (z > 0.01) & (u >= 0) & (u < W) & (v >= 0) & (v < H) & (z < 10.0)
+                fim_total += torch.where(in_frustum, 1.0 / (1.0 + z ** 2), torch.zeros_like(z))
+
+        fim_weight = fim_total.unsqueeze(-1)  # [N, 1]
+        self.gaussian_map.fim_means = fim_weight.expand(-1, 3).clone()
+        self.gaussian_map.fim_quats = fim_weight.expand(-1, 4).clone()
+        self.gaussian_map.fim_scales = fim_weight.expand(-1, 3).clone()
+        self.gaussian_map.fim_opac = fim_weight.clone()
+        self.gaussian_map.fim_sh_dc = fim_weight.unsqueeze(-1).expand(-1, 1, 3).clone()
+
+        # Prune Gaussians never observed by any camera (artifacts)
+        mask = fim_total > 0
+        if mask.sum() < N and mask.sum() > 0:
+            self.gaussian_map = GaussianMap(
+                means=self.gaussian_map.means[mask],
+                quats=self.gaussian_map.quats[mask],
+                scales=self.gaussian_map.scales[mask],
+                opacities=self.gaussian_map.opacities[mask],
+                sh_dc=self.gaussian_map.sh_dc[mask],
+                sh_rest=self.gaussian_map.sh_rest[mask],
+                robot_id=self.gaussian_map.robot_id,
+                timestamp=self.gaussian_map.timestamp,
+                fim_means=self.gaussian_map.fim_means[mask],
+                fim_quats=self.gaussian_map.fim_quats[mask],
+                fim_scales=self.gaussian_map.fim_scales[mask],
+                fim_opac=self.gaussian_map.fim_opac[mask],
+                fim_sh_dc=self.gaussian_map.fim_sh_dc[mask],
+            )

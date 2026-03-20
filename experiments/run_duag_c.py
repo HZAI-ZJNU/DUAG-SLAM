@@ -574,7 +574,9 @@ def run_experiment(config_path: str):
         all_results[scene] = scene_results
 
         # Compute ECE (Expected Calibration Error) for H3 validation.
-        # Uses FIM from SLAM and backprojected GT surface from last few frames.
+        # Frustum-based FIM from SLAM + backprojected GT surface in SLAM frame.
+        all_fim_traces = []
+        all_recon_errors = []
         for agent_id in range(n_agents):
             gmap = robots[agent_id].gaussian_map
             if gmap.fim_means is None:
@@ -586,15 +588,20 @@ def run_experiment(config_path: str):
             if N < 10:
                 continue
 
-            # Build GT surface cloud from last 5 GT frames (local evaluation)
+            # Camera intrinsics for backprojection
             cam_cfg = dataset_cfg.get("cam", {})
             fx = cam_cfg.get("fx", 280.0)
             fy = cam_cfg.get("fy", 280.0)
             cx = cam_cfg.get("cx", 255.5)
             cy = cam_cfg.get("cy", 255.5)
 
+            # First GT pose — transforms GT world frame to SLAM frame
+            _, _, gt_pose_0 = loaders[agent_id][0]
+            gt0_inv = np.linalg.inv(gt_pose_0)
+
+            # Build GT surface from every 10th frame across full trajectory
             gt_points_all = []
-            for fi in range(max(0, n_frames - 5), n_frames):
+            for fi in range(0, n_frames, 10):
                 _, depth_frame, gt_pose = loaders[agent_id][fi]
                 H_img, W_img = depth_frame.shape[:2]
                 u, v = np.meshgrid(np.arange(W_img), np.arange(H_img))
@@ -604,47 +611,45 @@ def run_experiment(config_path: str):
                 y3d = (v[valid] - cy) * z[valid] / fy
                 z3d = z[valid]
                 pts_cam = np.stack([x3d, y3d, z3d], axis=-1)
-                R_gt = gt_pose[:3, :3]
-                t_gt = gt_pose[:3, 3]
-                pts_world = (R_gt @ pts_cam.T).T + t_gt
-                if len(pts_world) > 20000:
-                    idx = np.random.choice(len(pts_world), 20000, replace=False)
-                    pts_world = pts_world[idx]
-                gt_points_all.append(pts_world)
+                # Transform to SLAM frame: inv(gt_pose_0) @ gt_pose[fi]
+                rel_pose = gt0_inv @ gt_pose
+                R_rel = rel_pose[:3, :3]
+                t_rel = rel_pose[:3, 3]
+                pts_slam = (R_rel @ pts_cam.T).T + t_rel
+                if len(pts_slam) > 20000:
+                    idx = np.random.choice(len(pts_slam), 20000, replace=False)
+                    pts_slam = pts_slam[idx]
+                gt_points_all.append(pts_slam)
 
             gt_cloud = np.concatenate(gt_points_all, axis=0).astype(np.float32)
 
-            # Nearest-surface distance per Gaussian (no alignment — both in SLAM frame)
+            # Nearest-surface distance per Gaussian
             from scipy.spatial import cKDTree
             tree = cKDTree(gt_cloud)
             dists, _ = tree.query(means_np, k=1)
             recon_errors = dists.astype(np.float32)
 
-            # ECE with quantile-based binning
+            # ECE using instruction document formula:
+            # uncertainty = 1/sqrt(FIM), min-max normalize, value-based binning
             n_bins = 10
+            uncertainty = 1.0 / np.sqrt(fim_trace + 1e-10)
+            u_min, u_max = uncertainty.min(), uncertainty.max()
+            u_range = u_max - u_min if (u_max - u_min) > 1e-10 else 1.0
+            uncertainty_norm = (uncertainty - u_min) / u_range
 
-            # Predicted reliability via rank percentile of FIM
-            rank_order = np.argsort(fim_trace)
-            predicted_reliability = np.zeros(N)
-            predicted_reliability[rank_order] = np.linspace(0, 1, N)
+            e_min, e_max = recon_errors.min(), recon_errors.max()
+            e_range = e_max - e_min if (e_max - e_min) > 1e-10 else 1.0
+            error_norm = (recon_errors - e_min) / e_range
 
-            # Actual reliability: 1 - normalized error (95th percentile robust)
-            e_p95 = np.percentile(recon_errors, 95)
-            error_clipped = np.clip(recon_errors, 0, e_p95)
-            actual_reliability = 1.0 - error_clipped / (e_p95 + 1e-10)
-            actual_reliability = np.clip(actual_reliability, 0, 1)
-
-            # Quantile-based binning
-            bin_edges = np.linspace(0, 1, n_bins + 1)
-            bin_idx = np.digitize(predicted_reliability, bin_edges[1:-1])
+            bin_idx = np.floor(uncertainty_norm * n_bins).clip(0, n_bins - 1).astype(int)
 
             ece = 0.0
             for b in range(n_bins):
                 mask = bin_idx == b
                 if mask.sum() == 0:
                     continue
-                pred_mean = predicted_reliability[mask].mean()
-                actual_mean = actual_reliability[mask].mean()
+                pred_mean = uncertainty_norm[mask].mean()
+                actual_mean = error_norm[mask].mean()
                 ece += (mask.sum() / N) * abs(actual_mean - pred_mean)
 
             scene_results[f"agent_{agent_id}_ECE"] = float(ece)
@@ -661,6 +666,33 @@ def run_experiment(config_path: str):
             os.makedirs(ece_dir, exist_ok=True)
             np.save(os.path.join(ece_dir, f"{scene}_agent_{agent_id}_fim_traces.npy"), fim_trace)
             np.save(os.path.join(ece_dir, f"{scene}_agent_{agent_id}_recon_errors.npy"), recon_errors)
+
+            # Collect for pooled ECE
+            all_fim_traces.append(fim_trace)
+            all_recon_errors.append(recon_errors)
+
+        # Pooled ECE across all agents (standard calibration metric)
+        if len(all_fim_traces) >= 2:
+            fim_pool = np.concatenate(all_fim_traces)
+            err_pool = np.concatenate(all_recon_errors)
+            N_pool = len(fim_pool)
+            n_bins = 10
+            unc_pool = 1.0 / np.sqrt(fim_pool + 1e-10)
+            u_min, u_max = unc_pool.min(), unc_pool.max()
+            u_rng = u_max - u_min if (u_max - u_min) > 1e-10 else 1.0
+            unc_pool_n = (unc_pool - u_min) / u_rng
+            e_min, e_max = err_pool.min(), err_pool.max()
+            e_rng = e_max - e_min if (e_max - e_min) > 1e-10 else 1.0
+            err_pool_n = (err_pool - e_min) / e_rng
+            bin_idx_p = np.floor(unc_pool_n * n_bins).clip(0, n_bins - 1).astype(int)
+            ece_pooled = 0.0
+            for b in range(n_bins):
+                mask = bin_idx_p == b
+                if mask.sum() == 0:
+                    continue
+                ece_pooled += (mask.sum() / N_pool) * abs(err_pool_n[mask].mean() - unc_pool_n[mask].mean())
+            scene_results["ECE_pooled"] = float(ece_pooled)
+            print(f"  Pooled ECE = {ece_pooled:.4f} (H3 target: < 0.05, N={N_pool})")
 
     # Save combined results
     if config.get("output", {}).get("save_metrics", True):
