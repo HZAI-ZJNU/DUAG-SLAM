@@ -1,0 +1,66 @@
+# experiments/configs/bandwidth_sweep_replica.yaml
+# Step 22: Communication constraint sweep using Replica-Multiagent data.
+# Tests H2: DUAG-C degrades gracefully under communication constraints.
+# SubT-MRS is unavailable (single-robot sequences, no RGB-D, fisheye cameras).
+# Replica-Multiagent provides cleanest multi-agent overlap for isolating
+# communication effects on consensus quality.
+#
+# Design: Each ADMM pose broadcast also carries a Gaussian summary payload
+# (simulating real-world map data exchange). comm_overhead_bytes controls
+# this per-message payload size. The sweep varies loss_rate to test
+# how DUAG-C handles unreliable communication links.
+experiment_name: "DUAG-C_CommSweep"
+
+dataset:
+  name: replica_multiagent
+  path: data/ReplicaMultiagent
+  scenes: ["Office-0"]
+  n_agents: 2
+  depth_scale: 6553.5
+  cam:
+    H: 680
+    W: 1200
+    fx: 600.0
+    fy: 600.0
+    cx: 599.5
+    cy: 339.5
+
+# Communication constraint sweep: vary loss rate
+# loss_rate=0.0: no packet loss (unlimited comm)
+# loss_rate=0.3: 30% message loss (moderate degradation)
+# loss_rate=0.6: 60% message loss (heavy degradation)
+# loss_rate=0.9: 90% message loss (near-isolation)
+comm_sweep_loss_rates: [0.0, 0.3, 0.6, 0.9]
+
+system:
+  use_fim_weighting: true
+  admm_rho_init: 1.0
+  admm_rho_max: 100.0
+  admm_max_iter: 100
+  admm_tol_primal: 1.0e-4
+  admm_tol_dual: 1.0e-4
+  pose_lr: 0.1
+  lambda_gauss: 1.0
+  gaussian_match_thresh: 0.05
+  fim_window_keyframes: 10
+  max_gaussians: 40000
+  n_init_gaussians: 500
+  device: "cuda"
+  loop_closure_distance_thresh: 2.0
+
+monogs_config_path: repos/MonoGS/configs/rgbd/replica/base_config.yaml
+
+frame_limit: 500
+
+output:
+  dir: outputs
+  save_trajectory: true
+  save_map: false
+  save_metrics: true
+
+seed: 42
+
+metrics: [ATE_RMSE, comm_bytes_total, messages_dropped, admm_iterations]
+validate:
+  ATE_at_unlimited_BW: "<0.20"
+hypothesis: "H2: DUAG-C degrades gracefully under bandwidth constraints."

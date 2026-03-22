@@ -393,19 +393,30 @@ class SimChannel:
     """
     Simulates inter-robot communication for single-machine experiments.
     All RobotNode instances share one SimChannel object.
+
+    bandwidth_bytes_per_frame: max bytes each sender can transmit per frame.
+        Default inf = unlimited. Call reset_frame_budget() once per frame.
     """
 
-    def __init__(self, bandwidth_bps: float = float('inf'), loss_rate: float = 0.0):
-        self.bandwidth_bps = bandwidth_bps
+    def __init__(self, bandwidth_bytes_per_frame: float = float('inf'), loss_rate: float = 0.0):
+        self.bandwidth_bytes_per_frame = bandwidth_bytes_per_frame
         self.loss_rate = loss_rate
         self._queues = defaultdict(list)
-        self._stats = {"sent": 0, "dropped": 0, "total_bytes": 0}
+        self._bytes_sent_this_frame = defaultdict(int)
+        self._stats = {"sent": 0, "dropped": 0, "dropped_bw": 0, "total_bytes": 0}
 
     def send(self, msg: RobotMessage) -> bool:
         if np.random.random() < self.loss_rate:
             self._stats["dropped"] += 1
             return False
         msg.byte_size = msg.byte_size or len(msg.payload)
+        # Enforce per-frame bandwidth budget per sender
+        if self.bandwidth_bytes_per_frame < float('inf'):
+            if self._bytes_sent_this_frame[msg.sender_id] + msg.byte_size > self.bandwidth_bytes_per_frame:
+                self._stats["dropped"] += 1
+                self._stats["dropped_bw"] += 1
+                return False
+        self._bytes_sent_this_frame[msg.sender_id] += msg.byte_size
         self._queues[msg.receiver_id].append(msg)
         self._stats["sent"] += 1
         self._stats["total_bytes"] += msg.byte_size
@@ -415,6 +426,10 @@ class SimChannel:
         msgs = self._queues[robot_id]
         self._queues[robot_id] = []
         return msgs
+
+    def reset_frame_budget(self):
+        """Call once per frame to reset the per-sender bandwidth counter."""
+        self._bytes_sent_this_frame = defaultdict(int)
 
     @property
     def stats(self):
@@ -573,11 +588,21 @@ def compute_rpe(gt_poses, est_poses):
 # Main experiment loop
 # ---------------------------------------------------------------------------
 
-def run_experiment(config_path: str):
+def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('inf'),
+                   loss_rate: float = 0.0):
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
     experiment_name = config["experiment_name"]
+    # Tag experiment name with comm constraint setting
+    if bandwidth_bytes_per_frame < float('inf'):
+        bw_tag = f"bw_{int(bandwidth_bytes_per_frame)}"
+        experiment_name = f"{experiment_name}_{bw_tag}"
+        config["experiment_name"] = experiment_name
+    if loss_rate > 0:
+        lr_tag = f"loss_{int(loss_rate * 100)}pct"
+        experiment_name = f"{experiment_name}_{lr_tag}"
+        config["experiment_name"] = experiment_name
     dataset_cfg = config["dataset"]
     system_cfg = config["system"]
     output_dir = config.get("output", {}).get("dir", "outputs")
@@ -641,8 +666,11 @@ def run_experiment(config_path: str):
             n_frames = min(n_frames, frame_limit)
         print(f"  Processing {n_frames} frames per agent")
 
-        # Create communication channel
-        channel = SimChannel()
+        # Create communication channel (with optional bandwidth throttling / loss)
+        channel = SimChannel(
+            bandwidth_bytes_per_frame=bandwidth_bytes_per_frame,
+            loss_rate=loss_rate,
+        )
 
         # Load MonoGS config for LocalSLAMWrapper
         monogs_config_path = config.get("monogs_config_path")
@@ -767,6 +795,9 @@ def run_experiment(config_path: str):
 
             timestamps.append(timestamp)
 
+            # Reset per-frame bandwidth budget
+            channel.reset_frame_budget()
+
             # Inject loop closures at detected frames
             for lc_frame, ai, aj, T_rel in loop_closures:
                 lc_key = (lc_frame, ai, aj)
@@ -821,6 +852,8 @@ def run_experiment(config_path: str):
         scene_results["comm_bytes_total"] = channel.stats["total_bytes"]
         scene_results["comm_sent"] = channel.stats["sent"]
         scene_results["comm_dropped"] = channel.stats["dropped"]
+        scene_results["comm_dropped_bw"] = channel.stats.get("dropped_bw", 0)
+        scene_results["bandwidth_bytes_per_frame"] = bandwidth_bytes_per_frame
         scene_results["use_fim_weighting"] = system_cfg.get("use_fim_weighting", True)
 
         # Save trajectories
@@ -1031,6 +1064,147 @@ def run_kimera_subsets(config_path: str):
     print(f"Scaling results saved to {scaling_path}")
 
 
+def run_bandwidth_sweep(config_path: str):
+    """Run experiment multiple times with different bandwidth limits for H2 validation."""
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+
+    bw_settings = config.get("bandwidth_sweep_bytes_per_frame", [999999999])
+    base_name = config["experiment_name"]
+    all_bw_results = {}
+
+    for bw in bw_settings:
+        bw_float = float(bw)
+        bw_label = "unlimited" if bw_float > 1e8 else f"{int(bw_float)}"
+        print(f"\n{'#'*60}")
+        print(f"Bandwidth sweep: {bw_label} bytes/frame")
+        print(f"{'#'*60}")
+
+        results = run_experiment(config_path, bandwidth_bytes_per_frame=bw_float)
+        all_bw_results[bw_label] = results
+
+    # Print bandwidth sweep summary
+    print(f"\n{'='*60}")
+    print("H2 Bandwidth Sweep Summary")
+    print(f"{'='*60}")
+    print(f"{'BW (B/frame)':<20} {'Mean ATE (m)':<15} {'Bytes Sent':<15} {'Msgs Dropped':<15}")
+    print("-" * 65)
+
+    summary_rows = []
+    for bw_label, res in all_bw_results.items():
+        ates = []
+        bytes_total = 0
+        dropped = 0
+        for scene, sr in res.items():
+            for k, v in sr.items():
+                if "ATE_RMSE" in k and isinstance(v, float):
+                    ates.append(v)
+            bytes_total += sr.get("comm_bytes_total", 0)
+            dropped += sr.get("comm_dropped", 0)
+        mean_ate = float(np.nanmean(ates)) if ates else float('nan')
+        print(f"{bw_label:<20} {mean_ate:<15.4f} {bytes_total:<15} {dropped:<15}")
+        summary_rows.append({
+            "bandwidth_bytes_per_frame": bw_label,
+            "mean_ATE_RMSE": mean_ate,
+            "comm_bytes_total": bytes_total,
+            "comm_dropped": dropped,
+        })
+
+    # Validate H2: graceful degradation
+    ate_values = [r["mean_ATE_RMSE"] for r in summary_rows if not np.isnan(r["mean_ATE_RMSE"])]
+    if len(ate_values) >= 2:
+        ate_unlimited = ate_values[0]  # first = highest bandwidth
+        ate_most_constrained = ate_values[-1]  # last = lowest bandwidth
+        ratio = ate_most_constrained / ate_unlimited if ate_unlimited > 0 else float('inf')
+        graceful = ratio < 5.0  # ATE shouldn't explode by more than 5x
+        print(f"\nH2 Validation:")
+        print(f"  ATE at unlimited BW: {ate_unlimited:.4f}m")
+        print(f"  ATE at most constrained: {ate_most_constrained:.4f}m")
+        print(f"  Degradation ratio: {ratio:.2f}x")
+        print(f"  Graceful degradation (< 5x): {'PASS' if graceful else 'FAIL'}")
+
+    # Save sweep results
+    output_dir = config.get("output", {}).get("dir", "outputs")
+    sweep_path = os.path.join(output_dir, "results", f"{base_name}_bw_sweep.json")
+    os.makedirs(os.path.dirname(sweep_path), exist_ok=True)
+    with open(sweep_path, "w") as f:
+        json.dump({"sweep_summary": summary_rows, "all_results": all_bw_results},
+                  f, indent=2, default=str)
+    print(f"Sweep results saved to {sweep_path}")
+
+
+def run_comm_sweep(config_path: str):
+    """Run experiment multiple times with different loss rates for H2 validation.
+
+    Tests: Does DUAG-C degrade gracefully when inter-robot messages are
+    randomly dropped?  Loss rates from 0% (ideal) to 90% (near-isolation).
+    """
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+
+    loss_rates = config.get("comm_sweep_loss_rates", [0.0])
+    base_name = config["experiment_name"]
+    all_results = {}
+
+    for lr in loss_rates:
+        lr_label = f"loss_{int(lr * 100)}pct"
+        print(f"\n{'#'*60}")
+        print(f"Comm sweep: loss_rate = {lr:.0%}")
+        print(f"{'#'*60}")
+
+        results = run_experiment(config_path, loss_rate=float(lr))
+        all_results[lr_label] = results
+
+    # Print sweep summary
+    print(f"\n{'='*60}")
+    print("H2 Communication Constraint Sweep Summary")
+    print(f"{'='*60}")
+    print(f"{'Loss Rate':<15} {'Mean ATE (m)':<15} {'Msgs Sent':<12} {'Msgs Dropped':<15}")
+    print("-" * 57)
+
+    summary_rows = []
+    for lr_label, res in all_results.items():
+        ates = []
+        sent = 0
+        dropped = 0
+        for scene, sr in res.items():
+            for k, v in sr.items():
+                if "ATE_RMSE" in k and isinstance(v, float):
+                    ates.append(v)
+            sent += sr.get("comm_sent", 0)
+            dropped += sr.get("comm_dropped", 0)
+        mean_ate = float(np.nanmean(ates)) if ates else float('nan')
+        print(f"{lr_label:<15} {mean_ate:<15.4f} {sent:<12} {dropped:<15}")
+        summary_rows.append({
+            "loss_rate": lr_label,
+            "mean_ATE_RMSE": mean_ate,
+            "comm_sent": sent,
+            "comm_dropped": dropped,
+        })
+
+    # Validate H2: graceful degradation
+    ate_values = [r["mean_ATE_RMSE"] for r in summary_rows if not np.isnan(r["mean_ATE_RMSE"])]
+    if len(ate_values) >= 2:
+        ate_ideal = ate_values[0]      # first = no loss
+        ate_worst = ate_values[-1]     # last = highest loss
+        ratio = ate_worst / ate_ideal if ate_ideal > 0 else float('inf')
+        graceful = ratio < 5.0
+        print(f"\nH2 Validation:")
+        print(f"  ATE at 0% loss: {ate_ideal:.4f}m (target: < 0.20m)")
+        print(f"  ATE at {int(float(loss_rates[-1]) * 100)}% loss: {ate_worst:.4f}m")
+        print(f"  Degradation ratio: {ratio:.2f}x")
+        print(f"  Graceful degradation (< 5x): {'PASS' if graceful else 'FAIL'}")
+
+    # Save sweep results
+    output_dir = config.get("output", {}).get("dir", "outputs")
+    sweep_path = os.path.join(output_dir, "results", f"{base_name}_comm_sweep.json")
+    os.makedirs(os.path.dirname(sweep_path), exist_ok=True)
+    with open(sweep_path, "w") as f:
+        json.dump({"sweep_summary": summary_rows, "all_results": all_results},
+                  f, indent=2, default=str)
+    print(f"Sweep results saved to {sweep_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run DUAG-C experiment")
     parser.add_argument("--config", required=True, help="Path to config YAML")
@@ -1039,8 +1213,14 @@ def main():
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
+    # If config has comm_sweep_loss_rates, run the communication sweep
+    if "comm_sweep_loss_rates" in config:
+        run_comm_sweep(args.config)
+    # If config has bandwidth_sweep, run the bandwidth sweep experiment
+    elif "bandwidth_sweep_bytes_per_frame" in config:
+        run_bandwidth_sweep(args.config)
     # If config has robot_subsets, run the N-robot scaling experiment
-    if "robot_subsets" in config.get("dataset", {}):
+    elif "robot_subsets" in config.get("dataset", {}):
         run_kimera_subsets(args.config)
     else:
         run_experiment(args.config)
