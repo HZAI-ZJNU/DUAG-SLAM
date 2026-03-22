@@ -215,6 +215,8 @@ class RiemannianADMM:
         assert self.state is not None
         T_i = self.state.primal_pose
         for nb_id, T_j in neighbor_poses.items():
+            if nb_id not in self.state.dual_vars:
+                self.state.dual_vars[nb_id] = torch.zeros(6, device=T_i.device)
             residual = se3_log(torch.linalg.inv(T_i) @ T_j)
             self.state.dual_vars[nb_id] = (self.state.dual_vars[nb_id]
                                            + self.rho * residual)

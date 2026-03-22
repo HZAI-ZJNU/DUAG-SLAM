@@ -9,6 +9,7 @@ import argparse
 import gc
 import json
 import os
+import re
 import sys
 import time
 from collections import defaultdict
@@ -89,6 +90,152 @@ class ReplicaMultiagentLoader:
         color = color.astype(np.float32) / 255.0   # [H,W,3] float in [0,1]
         depth = cv2.imread(str(self.depth_paths[idx]), cv2.IMREAD_UNCHANGED)
         depth = depth.astype(np.float32) / self.depth_scale  # [H,W] metres
+        pose = self.poses[idx]
+        return color, depth, pose
+
+
+class S3ELoader:
+    """
+    Loads RGB-D frames and GT poses for one robot from S3Ev1 dataset.
+
+    Structure:
+        S3Ev1/{sequence}/{Robot}/Camera/image_left/{timestamp}.jpg
+        S3Ev1/{sequence}/{Robot}/Camera/depth/{timestamp}.png   (stereo-computed)
+        S3Ev1/{sequence}/{robot}_gt.txt   (timestamp x y z qx qy qz qw, ~1Hz GPS)
+        S3Ev1/Calibration/{robot}.yaml
+
+    GT is at ~1Hz, images at 10Hz. Poses are interpolated to image timestamps.
+    UTM coordinates are centered relative to the first pose.
+    """
+
+    ROBOT_NAMES = ["Alpha", "Bob", "Carol"]
+
+    def __init__(self, dataset_path: str, scene: str, agent_id: int, config: dict):
+        self.dataset_path = Path(dataset_path)
+        self.scene = scene
+        self.agent_id = agent_id
+        self.depth_scale = config["dataset"].get("depth_scale", 1000.0)
+        self.frame_limit = config.get("frame_limit", -1)
+        self.frame_step = config.get("frame_step", 1)
+
+        robot_name = self.ROBOT_NAMES[agent_id]
+        self.robot_name = robot_name
+        base = self.dataset_path / "S3Ev1"
+
+        # Image directory
+        self.img_dir = base / scene / robot_name / "Camera" / "image_left"
+        self.depth_dir = base / scene / robot_name / "Camera" / "depth"
+        if not self.img_dir.exists():
+            raise FileNotFoundError(f"Image directory not found: {self.img_dir}")
+
+        # Load GT trajectory
+        gt_path = base / scene / f"{robot_name.lower()}_gt.txt"
+        if not gt_path.exists():
+            raise FileNotFoundError(f"GT trajectory not found: {gt_path}")
+        self._gt_timestamps, self._gt_poses_raw = self._load_gt(gt_path)
+        if len(self._gt_timestamps) < 2:
+            raise ValueError(f"GT has <2 poses for {scene}/{robot_name}: unusable")
+
+        # Center GT positions relative to first pose
+        origin = self._gt_poses_raw[0][:3, 3].copy()
+        for p in self._gt_poses_raw:
+            p[:3, 3] -= origin
+
+        # Load image file list and extract timestamps
+        all_imgs = sorted(self.img_dir.glob("*.jpg"))
+        if not all_imgs:
+            raise FileNotFoundError(f"No images in {self.img_dir}")
+
+        # Only keep images within GT time coverage
+        gt_t_min = self._gt_timestamps[0]
+        gt_t_max = self._gt_timestamps[-1]
+        self._img_paths = []
+        self._img_timestamps = []
+        for p in all_imgs:
+            ts = float(p.stem)
+            if gt_t_min <= ts <= gt_t_max:
+                self._img_paths.append(p)
+                self._img_timestamps.append(ts)
+
+        # Apply frame_step (subsample)
+        if self.frame_step > 1:
+            self._img_paths = self._img_paths[::self.frame_step]
+            self._img_timestamps = self._img_timestamps[::self.frame_step]
+
+        # Apply frame_limit
+        if self.frame_limit > 0:
+            self._img_paths = self._img_paths[:self.frame_limit]
+            self._img_timestamps = self._img_timestamps[:self.frame_limit]
+
+        # Interpolate GT poses at image timestamps
+        self.poses = self._interpolate_poses()
+
+    def _load_gt(self, path):
+        """Load TUM-format GT: timestamp x y z qx qy qz qw."""
+        timestamps = []
+        poses = []
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                # Handle missing spaces (e.g. "-0.041-0.296")
+                parts = re.split(r'\s+', line)
+                if len(parts) < 8:
+                    continue
+                ts = float(parts[0])
+                tx, ty, tz = float(parts[1]), float(parts[2]), float(parts[3])
+                qx, qy, qz, qw = float(parts[4]), float(parts[5]), float(parts[6]), float(parts[7])
+                from scipy.spatial.transform import Rotation
+                R = Rotation.from_quat([qx, qy, qz, qw]).as_matrix()
+                T = np.eye(4, dtype=np.float32)
+                T[:3, :3] = R.astype(np.float32)
+                T[:3, 3] = np.array([tx, ty, tz], dtype=np.float32)
+                timestamps.append(ts)
+                poses.append(T)
+        return timestamps, poses
+
+    def _interpolate_poses(self):
+        """Interpolate GT poses (1Hz) at image timestamps (10Hz) using linear lerp."""
+        gt_ts = np.array(self._gt_timestamps)
+        poses_out = []
+        for img_ts in self._img_timestamps:
+            # Find bracketing GT poses
+            idx = np.searchsorted(gt_ts, img_ts, side='right') - 1
+            idx = max(0, min(idx, len(gt_ts) - 2))
+            t0, t1 = gt_ts[idx], gt_ts[idx + 1]
+            dt = t1 - t0
+            if dt < 1e-6:
+                alpha = 0.0
+            else:
+                alpha = float(np.clip((img_ts - t0) / dt, 0.0, 1.0))
+            # Linear interpolation of position
+            p0 = self._gt_poses_raw[idx]
+            p1 = self._gt_poses_raw[idx + 1]
+            pose = p0.copy()
+            pose[:3, 3] = (1.0 - alpha) * p0[:3, 3] + alpha * p1[:3, 3]
+            # For rotation: use nearest (GT has identity rotation from GPS)
+            poses_out.append(pose)
+        return poses_out
+
+    def __len__(self):
+        return len(self._img_paths)
+
+    def __getitem__(self, idx):
+        # Load RGB image
+        color = cv2.imread(str(self._img_paths[idx]))
+        color = cv2.cvtColor(color, cv2.COLOR_BGR2RGB)
+        color = color.astype(np.float32) / 255.0  # [H,W,3]
+
+        # Load stereo depth if available, else return zeros
+        depth_path = self.depth_dir / f"{self._img_paths[idx].stem}.png"
+        if depth_path.exists():
+            depth = cv2.imread(str(depth_path), cv2.IMREAD_UNCHANGED)
+            depth = depth.astype(np.float32) / self.depth_scale  # mm -> metres
+        else:
+            H, W = color.shape[:2]
+            depth = np.zeros((H, W), dtype=np.float32)
+
         pose = self.poses[idx]
         return color, depth, pose
 
@@ -371,6 +518,8 @@ def run_experiment(config_path: str):
         dataset_name = dataset_cfg.get("name", "replica_multiagent")
         if dataset_name == "aria_multiagent":
             LoaderClass = AriaMultiagentLoader
+        elif dataset_name == "s3e":
+            LoaderClass = S3ELoader
         else:
             LoaderClass = ReplicaMultiagentLoader
 
@@ -434,6 +583,14 @@ def run_experiment(config_path: str):
                 robot_config["cy"] = cal["cy"]
                 robot_config["H"] = cal.get("height", 680)
                 robot_config["W"] = cal.get("width", 1200)
+        elif "cam" in dataset_cfg:
+            cam = dataset_cfg["cam"]
+            robot_config["fx"] = cam["fx"]
+            robot_config["fy"] = cam["fy"]
+            robot_config["cx"] = cam["cx"]
+            robot_config["cy"] = cam["cy"]
+            robot_config["H"] = cam.get("H", 1024)
+            robot_config["W"] = cam.get("W", 1224)
 
         robots = []
         slam_wrappers = []
@@ -471,9 +628,16 @@ def run_experiment(config_path: str):
 
         t_start = time.time()
 
+        # Initialize per-agent cumulative drift for synthetic mode
+        drift_poses = [torch.eye(4, device=device) for _ in range(n_agents)]
+
         # Main processing loop
         for t in range(n_frames):
-            timestamp = float(t) / 30.0  # assume 30 fps
+            # Use real timestamps from loader if available (S3E), else synthesize
+            if hasattr(loaders[0], '_img_timestamps'):
+                timestamp = loaders[0]._img_timestamps[t]
+            else:
+                timestamp = float(t) / 30.0  # assume 30 fps
 
             for agent_id in range(n_agents):
                 color, depth, gt_pose = loaders[agent_id][t]
@@ -481,6 +645,20 @@ def run_experiment(config_path: str):
                 # Convert to tensors
                 rgb_tensor = torch.from_numpy(color).float()
                 depth_tensor = torch.from_numpy(depth).float()
+
+                # For synthetic mode (no MonoGS): use GT pose + cumulative drift
+                # Random walk drift simulates odometry error accumulation.
+                # Loop closures should correct this drift, showing consensus value.
+                if slam_wrappers[agent_id] is None:
+                    gt_pose_t = torch.from_numpy(gt_pose).float().to(device)
+                    # Accumulate small per-frame drift (random walk)
+                    drift_step = torch.eye(4, device=device)
+                    drift_step[:3, 3] = torch.randn(3, device=device) * 0.01  # 1cm/frame std
+                    drift_poses[agent_id] = drift_poses[agent_id] @ drift_step
+                    # Apply accumulated drift to GT pose
+                    noisy_pose = gt_pose_t @ drift_poses[agent_id]
+                    # Set as w2c (invert GT c2w)
+                    robots[agent_id].current_pose = torch.linalg.inv(noisy_pose)
 
                 # Feed frame to robot (LocalSLAMWrapper produces real poses)
                 robots[agent_id].process_frame(rgb_tensor, depth_tensor, timestamp)

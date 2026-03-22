@@ -1,29 +1,21 @@
 # experiments/configs/s3e_duag_c.yaml
+# S3Ev1 dataset — 2 outdoor sequences with 3 UGVs
+# H4: DUAG-C degrades gracefully with reduced robot overlap
 experiment_name: "DUAG-C_S3E"
 dataset_name: s3e
 dataset:
   name: s3e
   path: data/s3e/
-  # All 18 sequences grouped by paradigm:
-  paradigms:
-    concentric_circles: ["outdoor_01", "outdoor_02", "outdoor_03"]
-    parallel_lines:     ["outdoor_04", "outdoor_05", "outdoor_06"]
-    crossing:           ["outdoor_07", "outdoor_08", "outdoor_09", "outdoor_10"]
-    leader_follower:    ["outdoor_11", "outdoor_12", "outdoor_13"]
-    indoor:             ["indoor_01", "indoor_02", "indoor_03", "indoor_04", "indoor_05"]
-  scenes: ["outdoor_01", "outdoor_02", "outdoor_03", "outdoor_04", "outdoor_05",
-           "outdoor_06", "outdoor_07", "outdoor_08", "outdoor_09", "outdoor_10",
-           "outdoor_11", "outdoor_12", "outdoor_13",
-           "indoor_01", "indoor_02", "indoor_03", "indoor_04", "indoor_05"]
+  scenes: ["S3E_Playground_2", "S3E_Square_2"]
   n_agents: 3
-  depth_scale: 1000.0
+  depth_scale: 1000.0   # 16-bit PNG in mm
   cam:
-    H: 480
-    W: 640
-    fx: 500.0
-    fy: 500.0
-    cx: 320.0
-    cy: 240.0
+    H: 1024
+    W: 1224
+    fx: 1172.771733
+    fy: 1172.364006
+    cx: 617.941546
+    cy: 507.672727
 
 system:
   use_fim_weighting: true
@@ -34,7 +26,7 @@ system:
   admm_tol_dual: 5.0e-4
   pose_lr: 0.1
   lambda_gauss: 1.0
-  gaussian_match_thresh: 0.10   # looser threshold for outdoor scenes
+  gaussian_match_thresh: 0.10
   fim_window_keyframes: 10
   max_gaussians: 150000
   n_init_gaussians: 500
@@ -46,13 +38,14 @@ output:
   save_map: true
   save_metrics: true
 
-metrics: [ATE_RMSE, RPE_trans, admm_iterations, loop_closure_precision, loop_closure_recall]
+metrics: [ATE_RMSE, RPE_trans, admm_iterations, comm_bytes_total]
 
 validate:
-  ATE_RMSE_concentric: "<0.15"
-  ATE_RMSE_parallel: "<0.30"
+  ATE_RMSE_Playground: "<0.50"
+  ATE_RMSE_Square: "<0.50"
 
 hypothesis: "H4: DUAG-C degrades gracefully with reduced robot overlap."
 
 seed: 42
 frame_limit: -1
+frame_step: 3   # subsample 10fps -> ~3.3fps for efficiency
