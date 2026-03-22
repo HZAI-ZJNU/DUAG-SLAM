@@ -244,120 +244,6 @@ class S3ELoader:
 # Communication channel (simulation)
 # ---------------------------------------------------------------------------
 
-class KimeraMultiLoader:
-    """
-    Synthetic GT loader for Kimera-Multi Campus-Outdoor (6-robot) experiment.
-
-    The actual rosbag data requires an access request form
-    (https://forms.gle/EBHJE3LEKkTsnABu7). This loader generates campus-like
-    GT trajectories for up to 6 robots with overlapping segments, enabling
-    the N-robot scaling validation in synthetic mode (GT + drift).
-
-    Trajectory design:
-      - 6 robots traverse distinct paths around a virtual campus grid
-      - Each path is ~150m long with intersections creating overlap zones
-      - 300 frames at 10fps = 30 seconds per robot
-    """
-
-    def __init__(self, dataset_path: str, scene: str, agent_id: int, config: dict):
-        self.agent_id = agent_id
-        self.frame_limit = config.get("frame_limit", -1)
-        n_frames = config.get("kimera_frames", 300)
-
-        # Generate campus-like GT trajectory
-        self.poses = self._generate_campus_trajectory(agent_id, n_frames)
-        if self.frame_limit > 0:
-            self.poses = self.poses[:self.frame_limit]
-
-        # Dummy image dimensions (not used in synthetic mode)
-        cam_cfg = config.get("dataset", {}).get("cam", {})
-        self._H = cam_cfg.get("H", 480)
-        self._W = cam_cfg.get("W", 640)
-
-    @staticmethod
-    def _generate_campus_trajectory(agent_id: int, n_frames: int):
-        """
-        Generate a campus-like trajectory for one robot.
-
-        Layout (top-down view, path segments):
-          Robot 0: East along road A (y=0), then north to (50, 50)
-          Robot 1: West along road A (y=0, reversed), then north to (-50, 50)
-          Robot 2: North along road B (x=0), then east to (50, 50)
-          Robot 3: South along road B (x=0, reversed), then west to (-50, -50)
-          Robot 4: Diagonal NE from (-25,-25) to (25, 25)
-          Robot 5: Large loop: (0,0) -> (40,0) -> (40,40) -> (0,40) -> (0,0)
-
-        Robots 0 and 2 meet at (50, 50). Robots 0 and 1 share road A.
-        More robots => more pairwise overlaps => more loop closures.
-        """
-        poses = []
-        speed = 0.5  # metres per frame (5 m/s at 10Hz)
-
-        # Define waypoints for each robot
-        waypoints_map = {
-            0: [(0, 0), (50, 0), (50, 50)],
-            1: [(50, 0), (0, 0), (-50, 0), (-50, 50)],
-            2: [(0, -50), (0, 0), (0, 50), (50, 50)],
-            3: [(0, 50), (0, 0), (0, -50), (-50, -50)],
-            4: [(-25, -25), (0, 0), (25, 25), (50, 25)],
-            5: [(0, 0), (40, 0), (40, 40), (0, 40), (0, 0)],
-        }
-        waypoints = waypoints_map.get(agent_id, [(0, 0), (50, 0)])
-
-        # Build dense positions along waypoint path
-        path_positions = []
-        for i in range(len(waypoints) - 1):
-            x0, y0 = waypoints[i]
-            x1, y1 = waypoints[i + 1]
-            seg_len = np.sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
-            n_pts = max(int(seg_len / speed), 1)
-            for t in range(n_pts):
-                alpha = t / n_pts
-                path_positions.append((
-                    x0 + alpha * (x1 - x0),
-                    y0 + alpha * (y1 - y0),
-                ))
-        # Ensure last waypoint is included
-        path_positions.append(waypoints[-1])
-
-        # Resample to exactly n_frames
-        total = len(path_positions)
-        for frame in range(n_frames):
-            idx = int(frame * (total - 1) / max(n_frames - 1, 1))
-            idx = min(idx, total - 1)
-            x, y = path_positions[idx]
-
-            # Build SE(3) pose: camera at (x, y, 1.0) looking forward
-            T = np.eye(4, dtype=np.float32)
-            T[0, 3] = x
-            T[1, 3] = y
-            T[2, 3] = 1.0  # robot height
-
-            # Compute heading from path tangent
-            if idx < total - 1:
-                nx, ny = path_positions[min(idx + 1, total - 1)]
-            else:
-                nx, ny = path_positions[max(idx - 1, 0)]
-                nx, ny = 2 * x - nx, 2 * y - ny
-            dx, dy = nx - x, ny - y
-            yaw = np.arctan2(dy, dx)
-            cy, sy = np.cos(yaw), np.sin(yaw)
-            T[0, 0] = cy;  T[0, 1] = -sy
-            T[1, 0] = sy;  T[1, 1] = cy
-
-            poses.append(T)
-        return poses
-
-    def __len__(self):
-        return len(self.poses)
-
-    def __getitem__(self, idx):
-        # Dummy RGB and depth for synthetic mode
-        color = np.zeros((self._H, self._W, 3), dtype=np.float32)
-        depth = np.ones((self._H, self._W), dtype=np.float32) * 5.0  # 5m flat
-        return color, depth, self.poses[idx]
-
-
 class AriaMultiagentLoader:
     """
     Loads RGB-D frames and GT poses for one agent from the AriaMultiagent dataset.
@@ -634,8 +520,6 @@ def run_experiment(config_path: str):
             LoaderClass = AriaMultiagentLoader
         elif dataset_name == "s3e":
             LoaderClass = S3ELoader
-        elif dataset_name == "kimera_campus":
-            LoaderClass = KimeraMultiLoader
         else:
             LoaderClass = ReplicaMultiagentLoader
 
@@ -1004,70 +888,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run DUAG-C experiment")
     parser.add_argument("--config", required=True, help="Path to config YAML")
     args = parser.parse_args()
-
-    # Check for robot_subsets (Kimera-Multi N-robot scaling experiment)
-    with open(args.config) as f:
-        cfg = yaml.safe_load(f)
-    robot_subsets = cfg.get("dataset", {}).get("robot_subsets")
-
-    if robot_subsets:
-        # Run experiment once per robot subset
-        import copy
-        all_subset_results = {}
-        for subset in robot_subsets:
-            n = len(subset)
-            print(f"\n{'#'*60}")
-            print(f"Robot subset: {subset} ({n} agents)")
-            print(f"{'#'*60}")
-            # Write a temp config with modified n_agents and experiment_name
-            cfg_copy = copy.deepcopy(cfg)
-            cfg_copy["dataset"]["n_agents"] = n
-            cfg_copy["experiment_name"] = f"{cfg['experiment_name']}_{n}agents"
-            import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as tf:
-                yaml.dump(cfg_copy, tf)
-                tmp_path = tf.name
-            try:
-                results = run_experiment(tmp_path)
-                all_subset_results[n] = results
-            finally:
-                os.unlink(tmp_path)
-
-        # Print N-robot scaling summary
-        print(f"\n{'='*60}")
-        print("N-Robot Scaling Summary")
-        print(f"{'='*60}")
-        for n_robots, results in sorted(all_subset_results.items()):
-            ates = []
-            for scene_key, scene_data in results.items():
-                if not isinstance(scene_data, dict):
-                    continue
-                for k, v in scene_data.items():
-                    if "ATE_RMSE" in k and isinstance(v, float):
-                        ates.append(v)
-            avg_ate = np.mean(ates) if ates else float('nan')
-            print(f"  {n_robots} agents: avg ATE = {avg_ate:.4f}m")
-
-        # Validate sub-linear scaling
-        ns = sorted(all_subset_results.keys())
-        if len(ns) >= 2:
-            ate_per_n = []
-            for n in ns:
-                ates = []
-                for sd in all_subset_results[n].values():
-                    if isinstance(sd, dict):
-                        for k, v in sd.items():
-                            if "ATE_RMSE" in k and isinstance(v, float):
-                                ates.append(v)
-                ate_per_n.append(np.mean(ates) if ates else float('nan'))
-            # Sub-linear check: ATE should decrease or stay flat as N grows
-            if not np.isnan(ate_per_n[-1]) and not np.isnan(ate_per_n[0]):
-                if ate_per_n[-1] <= ate_per_n[0]:
-                    print("  => ATE non-increasing with N: sub-linear scaling VALIDATED")
-                else:
-                    print(f"  => ATE increased with N: {ate_per_n[0]:.4f} -> {ate_per_n[-1]:.4f}")
-    else:
-        run_experiment(args.config)
+    run_experiment(args.config)
 
 
 if __name__ == "__main__":
