@@ -1,0 +1,84 @@
+
+=== S3E_Playground_2 ===
+  Processing Alpha (bf=422.20, size=(1224, 1024))...
+    Alpha: 200/2206 frames processed
+    Alpha: 400/2206 frames processed
+    Alpha: 600/2206 frames processed
+    Alpha: 800/2206 frames processed
+    Alpha: 1000/2206 frames processed
+    Alpha: 1200/2206 frames processed
+    Alpha: 1400/2206 frames processed
+    Alpha: 1600/2206 frames processed
+    Alpha: 1800/2206 frames processed
+    Alpha: 2000/2206 frames processed
+    Alpha: 2200/2206 frames processed
+  Alpha: 2206 depth maps computed/found
+  Processing Bob (bf=423.49, size=(1224, 1024))...
+    Bob: 200/2202 frames processed
+    Bob: 400/2202 frames processed
+    Bob: 600/2202 frames processed
+    Bob: 800/2202 frames processed
+    Bob: 1000/2202 frames processed
+    Bob: 1200/2202 frames processed
+    Bob: 1400/2202 frames processed
+    Bob: 1600/2202 frames processed
+    Bob: 1800/2202 frames processed
+    Bob: 2000/2202 frames processed
+    Bob: 2200/2202 frames processed
+  Bob: 2202 depth maps computed/found
+  Processing Carol (bf=423.46, size=(1224, 1024))...
+    Carol: 200/2187 frames processed
+    Carol: 400/2187 frames processed
+    Carol: 600/2187 frames processed
+    Carol: 800/2187 frames processed
+    Carol: 1000/2187 frames processed
+    Carol: 1200/2187 frames processed
+    Carol: 1400/2187 frames processed
+    Carol: 1600/2187 frames processed
+    Carol: 1800/2187 frames processed
+    Carol: 2000/2187 frames processed
+  Carol: 2187 depth maps computed/found
+
+=== S3E_Square_2 ===
+  Processing Alpha (bf=422.20, size=(1224, 1024))...
+    Alpha: 200/2397 frames processed
+    Alpha: 400/2397 frames processed
+    Alpha: 600/2397 frames processed
+    Alpha: 800/2397 frames processed
+    Alpha: 1000/2397 frames processed
+    Alpha: 1200/2397 frames processed
+    Alpha: 1400/2397 frames processed
+    Alpha: 1600/2397 frames processed
+    Alpha: 1800/2397 frames processed
+    Alpha: 2000/2397 frames processed
+    Alpha: 2200/2397 frames processed
+  Alpha: 2397 depth maps computed/found
+  Processing Bob (bf=423.49, size=(1224, 1024))...
+    Bob: 200/2490 frames processed
+    Bob: 400/2490 frames processed
+    Bob: 600/2490 frames processed
+    Bob: 800/2490 frames processed
+    Bob: 1000/2490 frames processed
+    Bob: 1200/2490 frames processed
+    Bob: 1400/2490 frames processed
+    Bob: 1600/2490 frames processed
+    Bob: 1800/2490 frames processed
+    Bob: 2000/2490 frames processed
+    Bob: 2200/2490 frames processed
+    Bob: 2400/2490 frames processed
+  Bob: 2490 depth maps computed/found
+  Processing Carol (bf=423.46, size=(1224, 1024))...
+    Carol: 200/2539 frames processed
+    Carol: 400/2539 frames processed
+    Carol: 600/2539 frames processed
+    Carol: 800/2539 frames processed
+    Carol: 1000/2539 frames processed
+    Carol: 1200/2539 frames processed
+    Carol: 1400/2539 frames processed
+    Carol: 1600/2539 frames processed
+    Carol: 1800/2539 frames processed
+    Carol: 2000/2539 frames processed
+    Carol: 2200/2539 frames processed
+    Carol: 2400/2539 frames processed
+  Carol: 2539 depth maps computed/found
+

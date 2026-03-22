@@ -1,22 +1,27 @@
 # experiments/configs/kimera_campus_duag_c.yaml
+# Step 21: Kimera-Multi Campus-Outdoor — N-robot scaling validation
+# Data: GT trajectories from https://github.com/MIT-SPARK/Kimera-Multi-Data
+# Platform: 6 Clearpath Jackal UGVs with Intel RealSense D455
+# No images available (rosbags gated) — runs in synthetic drift mode
 experiment_name: "DUAG-C_Kimera_Campus"
 dataset_name: kimera_campus
 dataset:
   name: kimera_campus
   path: data/kimera_campus/
-  sequences: ["campus_outdoor_00", "campus_outdoor_01"]
-  scenes: ["campus_outdoor_00", "campus_outdoor_01"]
-  # Run three times with different robot subsets
-  robot_subsets: [[0,1], [0,1,2,3], [0,1,2,3,4,5]]
+  sequences: ["Campus-Outdoor"]
+  scenes: ["Campus-Outdoor"]
+  # Robot IDs: 0=acl_jackal, 1=acl_jackal2, 2=sparkal1, 3=sparkal2, 4=hathor, 5=thoth
+  robot_subsets: [[0, 1], [0, 1, 2, 3], [0, 1, 2, 3, 4, 5]]
   n_agents: 6
   depth_scale: 1000.0
   cam:
+    # Intel RealSense D455 intrinsics from calibration/LeftCameraParams.yaml
     H: 480
     W: 640
-    fx: 500.0
-    fy: 500.0
-    cx: 320.0
-    cy: 240.0
+    fx: 377.229
+    fy: 377.487
+    cx: 326.352
+    cy: 239.660
 
 system:
   use_fim_weighting: true
@@ -28,6 +33,7 @@ system:
   pose_lr: 0.1
   lambda_gauss: 1.0
   gaussian_match_thresh: 0.15
+  loop_closure_distance_thresh: 10.0
   fim_window_keyframes: 10
   max_gaussians: 200000
   n_init_gaussians: 500
@@ -47,4 +53,5 @@ validate:
 hypothesis: "Outdoor generalization and N-robot scaling."
 
 seed: 42
-frame_limit: -1
+frame_limit: 500
+frame_step: 10

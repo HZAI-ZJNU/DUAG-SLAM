@@ -301,6 +301,94 @@ class AriaMultiagentLoader:
         return color, depth, pose
 
 
+class KimeraMultiLoader:
+    """
+    Loads GT poses for one robot from the Kimera-Multi-Data Campus dataset.
+
+    GT format: CSV with header  #timestamp_kf,x,y,z,qw,qx,qy,qz
+    Timestamps are in nanoseconds, quaternion is w-first.
+    No images available (locked in rosbags) — returns blank frames.
+    Experiment runs in synthetic drift mode.
+
+    Structure:
+        {sequence}/gt/{robot_name}_gt_odom.csv
+    """
+
+    # Robot ID -> name mapping (Kimera-Multi convention)
+    ROBOT_NAMES = {
+        0: "acl_jackal",
+        1: "acl_jackal2",
+        2: "sparkal1",
+        3: "sparkal2",
+        4: "hathor",
+        5: "thoth",
+        6: "apis",
+        7: "sobek",
+    }
+
+    def __init__(self, dataset_path: str, scene: str, agent_id: int, config: dict):
+        self.dataset_path = Path(dataset_path)
+        self.scene = scene
+        self.agent_id = agent_id
+        self.frame_limit = config.get("frame_limit", -1)
+        self.frame_step = config.get("frame_step", 1)
+
+        robot_name = self.ROBOT_NAMES[agent_id]
+        gt_path = self.dataset_path / scene / "gt" / f"{robot_name}_gt_odom.csv"
+        if not gt_path.exists():
+            raise FileNotFoundError(f"GT not found: {gt_path}")
+
+        # Parse CSV: timestamp_ns,x,y,z,qw,qx,qy,qz
+        data = np.loadtxt(str(gt_path), delimiter=',', skiprows=1)
+        timestamps_ns = data[:, 0]
+        self._timestamps = timestamps_ns * 1e-9  # -> seconds
+
+        from scipy.spatial.transform import Rotation
+        self.poses = []
+        for i in range(len(data)):
+            x, y, z = data[i, 1], data[i, 2], data[i, 3]
+            qw, qx, qy, qz = data[i, 4], data[i, 5], data[i, 6], data[i, 7]
+            R = Rotation.from_quat([qx, qy, qz, qw]).as_matrix()
+            T = np.eye(4, dtype=np.float32)
+            T[:3, :3] = R.astype(np.float32)
+            T[:3, 3] = np.array([x, y, z], dtype=np.float32)
+            self.poses.append(T)
+
+        # Center positions relative to first pose
+        origin = self.poses[0][:3, 3].copy()
+        for p in self.poses:
+            p[:3, 3] -= origin
+
+        # Subsample
+        if self.frame_step > 1:
+            self.poses = self.poses[::self.frame_step]
+            self._timestamps = self._timestamps[::self.frame_step]
+
+        # Apply frame limit
+        if self.frame_limit > 0:
+            self.poses = self.poses[:self.frame_limit]
+            self._timestamps = self._timestamps[:self.frame_limit]
+
+        # Camera resolution from config (used for dummy images)
+        cam = config.get("dataset", {}).get("cam", {})
+        self._H = cam.get("H", 480)
+        self._W = cam.get("W", 640)
+
+    @property
+    def _img_timestamps(self):
+        return self._timestamps.tolist()
+
+    def __len__(self):
+        return len(self.poses)
+
+    def __getitem__(self, idx):
+        # No images available — return blank frames for synthetic mode
+        color = np.zeros((self._H, self._W, 3), dtype=np.float32)
+        depth = np.zeros((self._H, self._W), dtype=np.float32)
+        pose = self.poses[idx]
+        return color, depth, pose
+
+
 class SimChannel:
     """
     Simulates inter-robot communication for single-machine experiments.
@@ -520,23 +608,28 @@ def run_experiment(config_path: str):
             LoaderClass = AriaMultiagentLoader
         elif dataset_name == "s3e":
             LoaderClass = S3ELoader
+        elif dataset_name == "kimera_campus":
+            LoaderClass = KimeraMultiLoader
         else:
             LoaderClass = ReplicaMultiagentLoader
 
         # Load dataset for each agent
+        # _robot_id_map remaps agent indices to real robot IDs (for Kimera subsets)
+        robot_id_map = dataset_cfg.get("_robot_id_map", list(range(n_agents)))
         loaders = []
         for agent_id in range(n_agents):
+            real_robot_id = robot_id_map[agent_id]
             try:
                 loader = LoaderClass(
                     dataset_path=dataset_cfg["path"],
                     scene=scene,
-                    agent_id=agent_id,
+                    agent_id=real_robot_id,
                     config=config,
                 )
                 loaders.append(loader)
-                print(f"  Agent {agent_id}: {len(loader)} frames loaded")
+                print(f"  Agent {agent_id} (robot {real_robot_id}): {len(loader)} frames loaded")
             except FileNotFoundError as e:
-                print(f"  Agent {agent_id}: SKIPPED ({e})")
+                print(f"  Agent {agent_id} (robot {real_robot_id}): SKIPPED ({e})")
                 loaders.append(None)
 
         if any(l is None for l in loaders):
@@ -621,7 +714,10 @@ def run_experiment(config_path: str):
 
         # Pre-detect loop closures from GT poses
         gt_poses_all = [loaders[a].poses for a in range(n_agents)]
-        loop_closures = detect_loop_closures(gt_poses_all, distance_thresh=2.0)
+        loop_closures = detect_loop_closures(
+            gt_poses_all,
+            distance_thresh=system_cfg.get("loop_closure_distance_thresh", 2.0),
+        )
         loop_closure_injected = set()
 
         print(f"  Detected {len(loop_closures)} potential loop closures")
@@ -884,11 +980,70 @@ def run_experiment(config_path: str):
     return all_results
 
 
+def run_kimera_subsets(config_path: str):
+    """Run Kimera-Multi experiment with multiple robot subsets for N-robot scaling."""
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+
+    robot_subsets = config["dataset"].get("robot_subsets", [[0, 1]])
+    base_name = config["experiment_name"]
+    all_subset_results = {}
+
+    for subset in robot_subsets:
+        n = len(subset)
+        print(f"\n{'#'*60}")
+        print(f"Running with {n}-robot subset: {subset}")
+        print(f"{'#'*60}")
+
+        # Update config for this subset
+        config["experiment_name"] = f"{base_name}_{n}robots"
+        config["dataset"]["n_agents"] = n
+        # Remap robot IDs: subset [0,2,4] -> loader agent_ids 0,2,4
+        config["dataset"]["_robot_id_map"] = subset
+
+        # Write temp config
+        tmp_path = config_path.replace(".yaml", f"_tmp_{n}robots.yaml")
+        with open(tmp_path, "w") as f:
+            yaml.dump(config, f)
+
+        results = run_experiment(tmp_path)
+        all_subset_results[f"{n}_robots"] = results
+
+        # Clean up
+        os.remove(tmp_path)
+
+    # Print N-robot scaling summary
+    print(f"\n{'='*60}")
+    print("N-robot scaling summary")
+    print(f"{'='*60}")
+    for key, res in sorted(all_subset_results.items()):
+        for scene, sr in res.items():
+            ates = [v for k, v in sr.items() if "ATE_RMSE" in k and isinstance(v, float)]
+            mean_ate = float(np.nanmean(ates)) if ates else float('nan')
+            print(f"  {key} / {scene}: mean ATE = {mean_ate:.4f}m")
+
+    # Save scaling results
+    output_dir = config.get("output", {}).get("dir", "outputs")
+    scaling_path = os.path.join(output_dir, "results", f"{base_name}_scaling.json")
+    os.makedirs(os.path.dirname(scaling_path), exist_ok=True)
+    with open(scaling_path, "w") as f:
+        json.dump(all_subset_results, f, indent=2, default=str)
+    print(f"Scaling results saved to {scaling_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run DUAG-C experiment")
     parser.add_argument("--config", required=True, help="Path to config YAML")
     args = parser.parse_args()
-    run_experiment(args.config)
+
+    with open(args.config) as f:
+        config = yaml.safe_load(f)
+
+    # If config has robot_subsets, run the N-robot scaling experiment
+    if "robot_subsets" in config.get("dataset", {}):
+        run_kimera_subsets(args.config)
+    else:
+        run_experiment(args.config)
 
 
 if __name__ == "__main__":
