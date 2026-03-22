@@ -1,22 +1,29 @@
 # experiments/configs/kimera_campus_duag_c.yaml
+# Kimera-Multi Campus-Outdoor: 6 Jackal UGVs with Intel RealSense D455
+# Rosbags require access request: https://forms.gle/EBHJE3LEKkTsnABu7
+# GT trajectories: https://drive.google.com/drive/folders/1LKUC7wLhlVuoxYRhSCZYUVAAffA9EpDy
+# Running in synthetic mode: GT trajectories + cumulative drift
 experiment_name: "DUAG-C_Kimera_Campus"
 dataset_name: kimera_campus
 dataset:
   name: kimera_campus
   path: data/kimera_campus/
-  sequences: ["campus_outdoor_00", "campus_outdoor_01"]
-  scenes: ["campus_outdoor_00", "campus_outdoor_01"]
-  # Run three times with different robot subsets
+  scenes: ["campus_outdoor"]
+  # Run three times with different robot subsets to test N-robot scaling
   robot_subsets: [[0,1], [0,1,2,3], [0,1,2,3,4,5]]
   n_agents: 6
   depth_scale: 1000.0
+  # Intel RealSense D455: 640x480 RGB-D
   cam:
     H: 480
     W: 640
-    fx: 500.0
-    fy: 500.0
-    cx: 320.0
-    cy: 240.0
+    fx: 386.179
+    fy: 386.179
+    cx: 323.395
+    cy: 237.784
+
+# Number of frames per robot in synthetic trajectory generation
+kimera_frames: 300
 
 system:
   use_fim_weighting: true
@@ -44,7 +51,7 @@ metrics: [ATE_RMSE, RPE_trans, admm_iterations, comm_bytes_total]
 validate:
   ATE_scaling: "sub-linear with N_robots"
 
-hypothesis: "Outdoor generalization and N-robot scaling."
+hypothesis: "Outdoor generalization and N-robot scaling. ATE should scale sub-linearly with N."
 
 seed: 42
 frame_limit: -1
