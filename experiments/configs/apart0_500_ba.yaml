@@ -1,10 +1,10 @@
-# experiments/configs/replica_multiagent_duag_c.yaml
-experiment_name: "duag_c_replica_multiagent"
+# Quick 500-frame test with bundle adjustment fix
+experiment_name: "duag_c_apart0_500_ba"
 
 dataset:
   name: replica_multiagent
   path: data/ReplicaMultiagent
-  scenes: ["Office-0", "Apart-0"]
+  scenes: ["Apart-0"]
   n_agents: 2
   depth_scale: 6553.5
   cam:
@@ -26,10 +26,10 @@ system:
   lambda_gauss: 1.0
   gaussian_match_thresh: 0.05
   fim_window_keyframes: 10
-  max_gaussians: 40000
+  max_gaussians: 30000
   n_init_gaussians: 500
-  refine_iterations: 3000
   device: "cuda"
+  loop_closure_distance_thresh: 2.0
 
 monogs_config_path: repos/MonoGS/configs/rgbd/replica/base_config.yaml
 
@@ -40,4 +40,4 @@ output:
   save_metrics: true
 
 seed: 42
-frame_limit: 500  # Office-0 loop closures start around frame 455
+frame_limit: 500

@@ -1,10 +1,11 @@
-# experiments/configs/replica_multiagent_duag_c.yaml
-experiment_name: "duag_c_replica_multiagent"
+# experiments/configs/replica_multiagent_base.yaml
+# Base config for all Replica-Multiagent scenes.
+# Per-scene configs inherit from this and override scene-specific fields.
+# Pattern matches MAGiC-SLAM: configs/ReplicaMultiagent/replica_multiagent.yaml
 
 dataset:
   name: replica_multiagent
   path: data/ReplicaMultiagent
-  scenes: ["Office-0", "Apart-0"]
   n_agents: 2
   depth_scale: 6553.5
   cam:
@@ -40,4 +41,3 @@ output:
   save_metrics: true
 
 seed: 42
-frame_limit: 500  # Office-0 loop closures start around frame 455

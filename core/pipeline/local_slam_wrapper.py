@@ -195,6 +195,13 @@ class LocalSLAMWrapper:
 
             # Run mapping iterations
             self._mapping(self._current_window, iters=self.mapping_itr_num)
+        else:
+            # Non-keyframe: release GPU tensors (original_image, depth) to prevent
+            # O(N_frames) memory growth.  MonoGS does this in slam_frontend.py:311-312.
+            viewpoint.clean()
+
+        if self._frame_count % 10 == 0:
+            torch.cuda.empty_cache()
 
         self._frame_count += 1
 
@@ -579,3 +586,81 @@ class LocalSLAMWrapper:
         T[:3, :3] = camera.R
         T[:3, 3]  = camera.T
         return T
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Post-experiment evaluation
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def compute_render_metrics(self, max_keyframes: int = 20) -> dict:
+        """
+        Evaluate PSNR, SSIM, LPIPS, DepthL1 on retained keyframes.
+
+        Only keyframes still have original_image/depth (non-keyframes are cleaned).
+        Returns dict with mean metrics across sampled keyframes.
+        """
+        from pytorch_msssim import ms_ssim
+        from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+
+        lpips_fn = LearnedPerceptualImagePatchSimilarity(net_type="alex").to(self.device)
+
+        kf_ids = self._kf_indices[-max_keyframes:]
+        psnrs, ssims, lpipses, depth_l1s = [], [], [], []
+
+        with torch.no_grad():
+            for kid in kf_ids:
+                vp = self._cameras.get(kid)
+                if vp is None or vp.original_image is None:
+                    continue
+
+                pkg = render(vp, self.gaussian_model, self.rasterizer_pipe, self.background)
+                if pkg is None:
+                    continue
+
+                rendered = pkg["render"].clamp(0, 1)        # [3, H, W]
+                gt = vp.original_image.cuda().clamp(0, 1)   # [3, H, W]
+
+                # PSNR
+                mse = (rendered - gt).pow(2).mean().item()
+                psnr = -10 * np.log10(max(mse, 1e-10))
+                psnrs.append(psnr)
+
+                # MS-SSIM (needs [B,C,H,W], min size 160)
+                h, w = gt.shape[1], gt.shape[2]
+                if min(h, w) >= 160:
+                    ssim_val = ms_ssim(
+                        rendered.unsqueeze(0), gt.unsqueeze(0),
+                        data_range=1.0, size_average=True,
+                    ).item()
+                    ssims.append(ssim_val)
+
+                # LPIPS (needs [B,C,H,W] in [-1,1])
+                lpips_val = lpips_fn(
+                    rendered.unsqueeze(0) * 2 - 1,
+                    gt.unsqueeze(0) * 2 - 1,
+                ).item()
+                lpipses.append(lpips_val)
+
+                # Depth L1
+                depth_r = pkg["depth"]  # [1, H, W]
+                if vp.depth is not None:
+                    gt_d = torch.from_numpy(vp.depth).to(self.device).unsqueeze(0)
+                    mask = gt_d > 0.01
+                    if mask.any():
+                        dl1 = (depth_r[mask] - gt_d[mask]).abs().mean().item()
+                        depth_l1s.append(dl1)
+
+        return {
+            "PSNR":    float(np.mean(psnrs))    if psnrs    else float("nan"),
+            "SSIM":    float(np.mean(ssims))    if ssims    else float("nan"),
+            "LPIPS":   float(np.mean(lpipses))  if lpipses  else float("nan"),
+            "DepthL1": float(np.mean(depth_l1s)) if depth_l1s else float("nan"),
+        }
+
+    def refine_map(self, iters: int = 3000) -> None:
+        """Run additional mapping iterations on the keyframe window after experiment."""
+        window = self._current_window[:self.window_size]
+        if not window:
+            window = self._kf_indices[-self.window_size:]
+        if not window:
+            return
+        self._mapping(window, iters=iters)

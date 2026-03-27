@@ -1,0 +1,6 @@
+# Per-scene config for Apart-0 (5001 frames/partition, use 2500 like MAGiC-SLAM)
+inherit_from: replica_multiagent_base.yaml
+experiment_name: "duag_c_apart0"
+dataset:
+  scenes: ["Apart-0"]
+frame_limit: 2500

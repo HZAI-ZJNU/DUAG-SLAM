@@ -585,13 +585,50 @@ def compute_rpe(gt_poses, est_poses):
 
 
 # ---------------------------------------------------------------------------
+# Config loading with inherit_from support (matches MAGiC-SLAM / MonoGS pattern)
+# ---------------------------------------------------------------------------
+
+def _merge_dicts(base: dict, override: dict) -> dict:
+    """Recursively merge *override* into *base*, returning a new dict."""
+    merged = base.copy()
+    for k, v in override.items():
+        if k in merged and isinstance(merged[k], dict) and isinstance(v, dict):
+            merged[k] = _merge_dicts(merged[k], v)
+        else:
+            merged[k] = v
+    return merged
+
+
+def load_config(config_path: str) -> dict:
+    """
+    Load a YAML config with optional ``inherit_from`` base config.
+
+    If the config contains an ``inherit_from`` key, load the base config first
+    (resolving its path relative to the child config's directory), then
+    recursively merge the child's values on top.  Supports one level of
+    inheritance (same as MAGiC-SLAM / MonoGS).
+    """
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    if "inherit_from" in config:
+        base_path = config.pop("inherit_from")
+        # Resolve relative to child config's directory
+        if not os.path.isabs(base_path):
+            base_path = os.path.join(os.path.dirname(config_path), base_path)
+        base_config = load_config(base_path)   # recursive — supports chaining
+        config = _merge_dicts(base_config, config)
+
+    return config
+
+
+# ---------------------------------------------------------------------------
 # Main experiment loop
 # ---------------------------------------------------------------------------
 
 def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('inf'),
                    loss_rate: float = 0.0):
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
+    config = load_config(config_path)
 
     experiment_name = config["experiment_name"]
     # Tag experiment name with comm constraint setting
@@ -855,6 +892,25 @@ def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('i
         scene_results["comm_dropped_bw"] = channel.stats.get("dropped_bw", 0)
         scene_results["bandwidth_bytes_per_frame"] = bandwidth_bytes_per_frame
         scene_results["use_fim_weighting"] = system_cfg.get("use_fim_weighting", True)
+
+        # Optional post-experiment map refinement
+        refine_iters = system_cfg.get("refine_iterations", 0)
+        if refine_iters > 0:
+            for agent_id in range(n_agents):
+                w = slam_wrappers[agent_id]
+                if w is not None:
+                    print(f"  Refining agent {agent_id} map ({refine_iters} iters)...")
+                    w.refine_map(iters=refine_iters)
+
+        # Render quality metrics (PSNR, SSIM, LPIPS, DepthL1) on keyframes
+        for agent_id in range(n_agents):
+            w = slam_wrappers[agent_id]
+            if w is not None:
+                rm = w.compute_render_metrics()
+                for k, v in rm.items():
+                    scene_results[f"agent_{agent_id}_{k}"] = v
+                print(f"  Agent {agent_id}: PSNR={rm['PSNR']:.2f}, SSIM={rm['SSIM']:.4f}, "
+                      f"LPIPS={rm['LPIPS']:.4f}, DepthL1={rm['DepthL1']:.4f}")
 
         # Save trajectories
         if config.get("output", {}).get("save_trajectory", True):

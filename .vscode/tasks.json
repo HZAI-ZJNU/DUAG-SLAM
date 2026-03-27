@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run DUAG-C Office-0",
+			"type": "shell",
+			"command": "PYTHONPATH=\"\" /home/wen/anaconda3/envs/duag/bin/python experiments/run_duag_c.py --config experiments/configs/replica_office0.yaml",
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}

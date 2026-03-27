@@ -1,0 +1,6 @@
+# Per-scene config for Office-0 (3001 frames/partition, use 1500 like MAGiC-SLAM)
+inherit_from: replica_multiagent_base.yaml
+experiment_name: "duag_c_office0"
+dataset:
+  scenes: ["Office-0"]
+frame_limit: 1500
