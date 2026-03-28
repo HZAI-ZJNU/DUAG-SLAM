@@ -102,6 +102,12 @@ class LocalSLAMWrapper:
         self.gaussian_reset  = train.get("gaussian_reset", 2001)
         self.size_threshold  = train.get("size_threshold", 20)
         self.max_gaussians   = train.get("max_gaussians", 80000)
+        self.pose_window     = train.get("pose_window", 5)
+
+        # Camera pose LR during mapping (0.5× tracking LR, matching MonoGS)
+        lr = train.get("lr", {})
+        self._map_rot_lr   = lr.get("cam_rot_delta", 0.003) * 0.5
+        self._map_trans_lr = lr.get("cam_trans_delta", 0.001) * 0.5
 
         # Gaussian model
         sh_degree = config["model_params"].get("sh_degree", 0)
@@ -193,8 +199,11 @@ class LocalSLAMWrapper:
             if len(self._current_window) > self.window_size:
                 self._current_window = self._current_window[:self.window_size]
 
-            # Run mapping iterations
+            # Run mapping iterations (jointly optimises Gaussians + camera poses)
             self._mapping(self._current_window, iters=self.mapping_itr_num)
+
+            # Update current pose from mapping-refined camera
+            self._current_pose = self._camera_to_w2c(viewpoint)
         else:
             # Non-keyframe: release GPU tensors (original_image, depth) to prevent
             # O(N_frames) memory growth.  MonoGS does this in slam_frontend.py:311-312.
@@ -452,7 +461,7 @@ class LocalSLAMWrapper:
     # ─────────────────────────────────────────────────────────────────────────
 
     def _mapping(self, current_window: list, iters: int = 1) -> None:
-        """Run mapping iterations over the keyframe window."""
+        """Run mapping iterations over the keyframe window with joint pose optimization."""
         if not current_window:
             return
 
@@ -460,6 +469,31 @@ class LocalSLAMWrapper:
                            if idx in self._cameras]
         if not viewpoint_stack:
             return
+
+        # Build keyframe pose optimizer (matching MonoGS slam_backend.py)
+        # Only the first pose_window cameras get pose refinement (skip uid==0)
+        frames_to_opt = min(self.pose_window, len(viewpoint_stack))
+        kf_opt_params = []
+        for cam_idx in range(frames_to_opt):
+            vp = viewpoint_stack[cam_idx]
+            if vp.uid == 0:
+                continue
+            kf_opt_params.append({
+                "params": [vp.cam_rot_delta],
+                "lr": self._map_rot_lr,
+                "name": f"map_rot_{vp.uid}",
+            })
+            kf_opt_params.append({
+                "params": [vp.cam_trans_delta],
+                "lr": self._map_trans_lr,
+                "name": f"map_trans_{vp.uid}",
+            })
+        # Exposure for all cameras in window
+        for vp in viewpoint_stack:
+            kf_opt_params.append({"params": [vp.exposure_a], "lr": 0.01, "name": f"map_exa_{vp.uid}"})
+            kf_opt_params.append({"params": [vp.exposure_b], "lr": 0.01, "name": f"map_exb_{vp.uid}"})
+
+        kf_optimizer = torch.optim.Adam(kf_opt_params) if kf_opt_params else None
 
         for _ in range(iters):
             self._iteration_count += 1
@@ -500,7 +534,6 @@ class LocalSLAMWrapper:
             loss_mapping.backward()
 
             # Accumulate gradient-based FIM (diagonal Hessian approx).
-            # Λ_k += (∂L/∂θ_k)² per Gaussian parameter.
             self._accumulate_fim()
 
             with torch.no_grad():
@@ -542,9 +575,20 @@ class LocalSLAMWrapper:
                 if (self._iteration_count % self.gaussian_reset) == 0 and not update_gaussian:
                     self.gaussian_model.reset_opacity_nonvisible(vis_acm)
 
+                # Step Gaussian optimizer
                 self.gaussian_model.optimizer.step()
                 self.gaussian_model.optimizer.zero_grad(set_to_none=True)
                 self.gaussian_model.update_learning_rate(self._iteration_count)
+
+                # Step keyframe pose optimizer + apply SE(3) update
+                if kf_optimizer is not None:
+                    kf_optimizer.step()
+                    kf_optimizer.zero_grad(set_to_none=True)
+                    for cam_idx in range(frames_to_opt):
+                        vp = viewpoint_stack[cam_idx]
+                        if vp.uid == 0:
+                            continue
+                        update_pose(vp)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Private – Pose helpers

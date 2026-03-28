@@ -7,6 +7,13 @@
 			"command": "PYTHONPATH=\"\" /home/wen/anaconda3/envs/duag/bin/python experiments/run_duag_c.py --config experiments/configs/replica_office0.yaml",
 			"isBackground": true,
 			"problemMatcher": []
+		},
+		{
+			"label": "Run DUAG-C Office-0 (pose-refined)",
+			"type": "shell",
+			"command": "PYTHONPATH=\"\" /home/wen/anaconda3/envs/duag/bin/python experiments/run_duag_c.py --config experiments/configs/replica_office0.yaml",
+			"isBackground": false,
+			"problemMatcher": []
 		}
 	]
 }
