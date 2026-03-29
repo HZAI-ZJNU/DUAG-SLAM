@@ -194,10 +194,11 @@ class LocalSLAMWrapper:
                 viewpoint, kf_id=uid, init=False, depthmap=depth_map,
             )
 
-            # Update window
-            self._current_window = [uid] + self._current_window
-            if len(self._current_window) > self.window_size:
-                self._current_window = self._current_window[:self.window_size]
+            # Update window (MonoGS-style geometric eviction)
+            self._current_window, _ = self._add_to_window(
+                uid, self._cur_visibility, self._occ_aware_visibility,
+                self._current_window,
+            )
 
             # Run mapping iterations (jointly optimises Gaussians + camera poses)
             self._mapping(self._current_window, iters=self.mapping_itr_num)
@@ -456,6 +457,75 @@ class LocalSLAMWrapper:
 
         return (point_ratio < self.kf_overlap and dist_check2) or dist_check
 
+    def _add_to_window(self, cur_frame_idx, cur_frame_visibility, occ_aware_visibility, window):
+        """MonoGS-style window management: geometric distance-based eviction.
+
+        1. Prepend new keyframe to window.
+        2. Remove frames with low overlap (Szymkiewicz-Simpson < cutoff).
+        3. If window still too large, remove the most redundant keyframe
+           (closest to all other keyframes, weighted by distance to current).
+        """
+        N_dont_touch = 2
+        window = [cur_frame_idx] + window
+        removed_frame = None
+
+        # Remove frames with low visibility overlap
+        to_remove = []
+        kf_cutoff = self.config["Training"].get("kf_cutoff", 0.4)
+        for i in range(N_dont_touch, len(window)):
+            kf_idx = window[i]
+            if kf_idx not in occ_aware_visibility:
+                continue
+            if cur_frame_visibility is None:
+                continue
+            kf_vis = occ_aware_visibility[kf_idx]
+            min_len = min(len(cur_frame_visibility), len(kf_vis))
+            intersection = torch.logical_and(
+                cur_frame_visibility[:min_len], kf_vis[:min_len],
+            ).count_nonzero()
+            denom = min(
+                cur_frame_visibility[:min_len].count_nonzero(),
+                kf_vis[:min_len].count_nonzero(),
+            )
+            if denom > 0:
+                point_ratio_2 = intersection / denom
+                if point_ratio_2 <= kf_cutoff:
+                    to_remove.append(kf_idx)
+
+        if to_remove:
+            window.remove(to_remove[-1])
+            removed_frame = to_remove[-1]
+
+        # If still too large, evict the most geometrically redundant keyframe
+        if len(window) > self.window_size:
+            curr_frame = self._cameras[cur_frame_idx]
+            kf_0_WC = torch.linalg.inv(getWorld2View2(curr_frame.R, curr_frame.T))
+
+            inv_dist = []
+            for i in range(N_dont_touch, len(window)):
+                inv_dists = []
+                kf_i_idx = window[i]
+                kf_i = self._cameras[kf_i_idx]
+                kf_i_CW = getWorld2View2(kf_i.R, kf_i.T)
+                for j in range(N_dont_touch, len(window)):
+                    if i == j:
+                        continue
+                    kf_j_idx = window[j]
+                    kf_j = self._cameras[kf_j_idx]
+                    kf_j_WC = torch.linalg.inv(getWorld2View2(kf_j.R, kf_j.T))
+                    T_CiCj = kf_i_CW @ kf_j_WC
+                    inv_dists.append(1.0 / (torch.norm(T_CiCj[0:3, 3]) + 1e-6).item())
+                T_CiC0 = kf_i_CW @ kf_0_WC
+                k = torch.sqrt(torch.norm(T_CiC0[0:3, 3])).item()
+                inv_dist.append(k * sum(inv_dists))
+
+            if inv_dist:
+                idx = int(np.argmax(inv_dist))
+                removed_frame = window[N_dont_touch + idx]
+                window.remove(removed_frame)
+
+        return window, removed_frame
+
     # ─────────────────────────────────────────────────────────────────────────
     # Private – Mapping
     # ─────────────────────────────────────────────────────────────────────────
@@ -708,3 +778,112 @@ class LocalSLAMWrapper:
         if not window:
             return
         self._mapping(window, iters=iters)
+
+    def global_pose_refinement(self, iters: int = 200, **kwargs) -> None:
+        """
+        Re-track all keyframe poses against the final (well-optimized) Gaussian
+        map.  During online tracking, early frames tracked against a sparse map.
+        The final map is much richer (40k Gaussians, fully refined), so re-tracking
+        each keyframe against it yields significantly better poses.
+
+        Non-keyframe poses are interpolated from optimized keyframes via SE(3)
+        afterwards (see get_all_poses).
+        """
+        lr = self.config["Training"]["lr"]
+
+        n_refined = 0
+        for uid in self._kf_indices:
+            if uid == 0:
+                continue
+            cam = self._cameras.get(uid)
+            if cam is None or cam.original_image is None:
+                continue
+
+            # Reset pose delta parameters for fresh optimization
+            cam.cam_rot_delta.data.fill_(0)
+            cam.cam_trans_delta.data.fill_(0)
+
+            opt_params = [
+                {"params": [cam.cam_rot_delta],
+                 "lr": lr["cam_rot_delta"], "name": f"rt_r_{uid}"},
+                {"params": [cam.cam_trans_delta],
+                 "lr": lr["cam_trans_delta"], "name": f"rt_t_{uid}"},
+            ]
+            optimizer = torch.optim.Adam(opt_params)
+
+            for _ in range(iters):
+                pkg = render(
+                    cam, self.gaussian_model,
+                    self.rasterizer_pipe, self.background,
+                )
+                if pkg is None:
+                    break
+
+                optimizer.zero_grad()
+                loss = get_loss_tracking(
+                    self.config, pkg["render"], pkg["depth"],
+                    pkg["opacity"], cam,
+                )
+                loss.backward()
+
+                with torch.no_grad():
+                    optimizer.step()
+                    converged = update_pose(cam)
+
+                if converged:
+                    break
+
+            n_refined += 1
+
+        return n_refined
+
+        # Unfreeze Gaussian parameters
+        for pg in self.gaussian_model.optimizer.param_groups:
+            for p in pg["params"]:
+                p.requires_grad_(True)
+
+    def get_all_poses(self) -> dict:
+        """
+        Return optimized w2c poses for ALL frames.
+        Keyframes: read directly from Camera objects (updated by global_pose_refinement).
+        Non-keyframes: SE(3) interpolation between surrounding keyframes.
+        """
+        from core.consensus.lie_algebra import se3_log, se3_exp
+
+        # Build sorted keyframe pose list
+        kf_uids = sorted(self._kf_indices)
+        kf_poses = {}
+        for uid in kf_uids:
+            cam = self._cameras.get(uid)
+            if cam is not None:
+                kf_poses[uid] = self._camera_to_w2c(cam)
+
+        all_poses = {}
+        for uid in range(self._frame_count):
+            if uid in kf_poses:
+                all_poses[uid] = kf_poses[uid]
+            else:
+                # Find surrounding keyframes for interpolation
+                prev_kf = None
+                next_kf = None
+                for k in kf_uids:
+                    if k <= uid:
+                        prev_kf = k
+                    if k > uid and next_kf is None:
+                        next_kf = k
+
+                if prev_kf is not None and next_kf is not None:
+                    alpha = float(uid - prev_kf) / float(next_kf - prev_kf)
+                    T_prev = kf_poses[prev_kf]
+                    T_next = kf_poses[next_kf]
+                    T_rel = torch.linalg.inv(T_prev) @ T_next
+                    xi = se3_log(T_rel)
+                    all_poses[uid] = T_prev @ se3_exp(alpha * xi)
+                elif prev_kf is not None:
+                    all_poses[uid] = kf_poses[prev_kf]
+                elif next_kf is not None:
+                    all_poses[uid] = kf_poses[next_kf]
+                else:
+                    all_poses[uid] = torch.eye(4, device=self.device)
+
+        return all_poses

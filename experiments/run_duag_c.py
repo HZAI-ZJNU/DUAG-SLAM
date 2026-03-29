@@ -902,6 +902,39 @@ def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('i
                     print(f"  Refining agent {agent_id} map ({refine_iters} iters)...")
                     w.refine_map(iters=refine_iters)
 
+        # Global pose refinement: freeze Gaussians, optimize ALL keyframe poses
+        # simultaneously against the final high-quality map.
+        gba_iters = system_cfg.get("global_ba_iterations", 0)
+        if gba_iters > 0:
+            for agent_id in range(n_agents):
+                w = slam_wrappers[agent_id]
+                if w is not None:
+                    print(f"  Re-tracking keyframes agent {agent_id} ({gba_iters} iters/kf)...")
+                    n_ref = w.global_pose_refinement(iters=gba_iters)
+
+            # Re-extract trajectory from optimized poses
+            for agent_id in range(n_agents):
+                w = slam_wrappers[agent_id]
+                if w is not None:
+                    all_poses = w.get_all_poses()
+                    new_traj = []
+                    for uid in range(len(est_trajectories[agent_id])):
+                        if uid in all_poses:
+                            w2c = all_poses[uid].detach().cpu().numpy()
+                            new_traj.append(np.linalg.inv(w2c))
+                        else:
+                            new_traj.append(est_trajectories[agent_id][uid])
+                    est_trajectories[agent_id] = new_traj
+
+            # Recompute ATE with refined poses
+            for agent_id in range(n_agents):
+                ate_refined = compute_ate_rmse(gt_trajectories[agent_id], est_trajectories[agent_id])
+                scene_results[f"agent_{agent_id}_ATE_RMSE"] = ate_refined
+                rpe_t, rpe_r = compute_rpe(gt_trajectories[agent_id], est_trajectories[agent_id])
+                scene_results[f"agent_{agent_id}_RPE_trans"] = rpe_t
+                scene_results[f"agent_{agent_id}_RPE_rot_deg"] = rpe_r
+                print(f"  Agent {agent_id} (after GBA): ATE={ate_refined:.4f}m, RPE_t={rpe_t:.4f}m, RPE_r={rpe_r:.2f}°")
+
         # Render quality metrics (PSNR, SSIM, LPIPS, DepthL1) on keyframes
         for agent_id in range(n_agents):
             w = slam_wrappers[agent_id]

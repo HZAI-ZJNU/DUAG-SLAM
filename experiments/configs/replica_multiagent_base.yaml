@@ -27,7 +27,7 @@ system:
   lambda_gauss: 1.0
   gaussian_match_thresh: 0.05
   fim_window_keyframes: 10
-  max_gaussians: 40000
+  max_gaussians: 60000
   n_init_gaussians: 500
   refine_iterations: 3000
   device: "cuda"
