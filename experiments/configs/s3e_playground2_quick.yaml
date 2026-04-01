@@ -34,11 +34,10 @@ system:
   loop_closure_distance_thresh: 5.0
   # Odometry drift mode: simulate realistic IMU/wheel odometry drift.
   # Errors accumulate over time (random walk on SE(3)).
-  # This is what multi-robot consensus + loop closures can actually correct.
-  # For 2200 frames: σ√N = 0.005 × √2200 ≈ 0.23m trans, 0.002 × √2200 ≈ 5.4° rot
-  # These are realistic for a UGV with wheel encoders over ~3 minutes.
-  odom_drift_trans: 0.005   # m/frame std (5mm — realistic for good wheel encoders)
-  odom_drift_rot: 0.002     # rad/frame std (~0.115°)
+  # For 2200 frames: σ√N = 0.003 × √2200 ≈ 0.14m trans, 0.0005 × √2200 ≈ 1.3° rot
+  # Conservative — good wheel encoders + IMU on flat ground.
+  odom_drift_trans: 0.003   # m/frame std (3mm)
+  odom_drift_rot: 0.0005    # rad/frame std (~0.03°)
 
 monogs_config_path: experiments/configs/s3e_monogs_base.yaml
 
@@ -49,5 +48,5 @@ output:
   save_metrics: true
 
 seed: 42
-# frame_limit: removed — run all ~2200 frames
+# frame_limit: run all ~2200 frames
 frame_step: 1
