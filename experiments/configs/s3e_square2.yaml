@@ -1,0 +1,52 @@
+# S3E Square_2 — 3 UGVs, outdoor, stereo depth
+experiment_name: "duag_c_s3e_square2"
+dataset_name: s3e
+dataset:
+  name: s3e
+  path: data/s3e/
+  scenes: ["S3E_Square_2"]
+  n_agents: 3
+  depth_scale: 1000.0
+  depth_trunc: 15.0
+  resize_factor: 0.5
+  cam:
+    H: 512
+    W: 612
+    fx: 586.385866
+    fy: 586.182003
+    cx: 308.970773
+    cy: 253.836363
+
+system:
+  use_fim_weighting: true
+  admm_rho_init: 1.0
+  admm_rho_max: 100.0
+  admm_max_iter: 150
+  admm_tol_primal: 5.0e-4
+  admm_tol_dual: 5.0e-4
+  pose_lr: 0.1
+  lambda_gauss: 1.0
+  gaussian_match_thresh: 0.10
+  fim_window_keyframes: 10
+  max_gaussians: 50000
+  n_init_gaussians: 500
+  device: "cuda"
+  loop_closure_distance_thresh: 5.0
+  # Odometry drift mode: simulate realistic IMU/wheel odometry drift.
+  # Errors accumulate over time (random walk on SE(3)).
+  # For 2200 frames: σ√N = 0.003 × √2200 ≈ 0.14m trans, 0.0005 × √2200 ≈ 1.3° rot
+  # Conservative — good wheel encoders + IMU on flat ground.
+  odom_drift_trans: 0.003   # m/frame std (3mm)
+  odom_drift_rot: 0.0005    # rad/frame std (~0.03°)
+
+monogs_config_path: experiments/configs/s3e_monogs_base.yaml
+
+output:
+  dir: outputs
+  save_trajectory: true
+  save_map: true
+  save_metrics: true
+
+seed: 42
+# frame_limit: full run
+frame_step: 1
