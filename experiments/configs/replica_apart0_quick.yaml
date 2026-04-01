@@ -1,0 +1,6 @@
+# Quick render test: Apart-0, 200 frames only
+inherit_from: replica_multiagent_base.yaml
+experiment_name: "duag_c_apart0_quick"
+dataset:
+  scenes: ["Apart-0"]
+frame_limit: 200

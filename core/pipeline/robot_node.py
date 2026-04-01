@@ -114,7 +114,8 @@ class RobotNode:
         self._neighbor_poses: Dict[int, Tensor] = {}
         self.use_fim_weighting = config.get("use_fim_weighting", True)
 
-    def process_frame(self, rgb: Tensor, depth: Tensor, timestamp: float) -> None:
+    def process_frame(self, rgb: Tensor, depth: Tensor, timestamp: float,
+                      gt_c2w: Optional[Tensor] = None) -> None:
         """
         Main per-frame entry point.
 
@@ -127,7 +128,7 @@ class RobotNode:
 
         # 1. Local SLAM update
         if self._slam_step is not None:
-            result = self._slam_step(rgb, depth, timestamp)
+            result = self._slam_step(rgb, depth, timestamp, gt_c2w=gt_c2w)
             if result is not None:
                 self.gaussian_map, self.current_pose = result
         else:

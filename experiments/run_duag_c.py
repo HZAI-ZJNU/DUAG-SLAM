@@ -8,6 +8,7 @@ Usage: python experiments/run_duag_c.py --config experiments/configs/replica_mul
 import argparse
 import gc
 import json
+import math
 import os
 import re
 import sys
@@ -117,6 +118,8 @@ class S3ELoader:
         self.depth_scale = config["dataset"].get("depth_scale", 1000.0)
         self.frame_limit = config.get("frame_limit", -1)
         self.frame_step = config.get("frame_step", 1)
+        self.resize_factor = config["dataset"].get("resize_factor", 1.0)
+        self.depth_trunc = config["dataset"].get("depth_trunc", 0.0)  # 0 = no truncation
 
         robot_name = self.ROBOT_NAMES[agent_id]
         self.robot_name = robot_name
@@ -196,9 +199,10 @@ class S3ELoader:
         return timestamps, poses
 
     def _interpolate_poses(self):
-        """Interpolate GT poses (1Hz) at image timestamps (10Hz) using linear lerp."""
+        """Interpolate GT poses (1Hz) at image timestamps (10Hz) using linear lerp.
+        Also compute heading-derived rotation from velocity direction."""
         gt_ts = np.array(self._gt_timestamps)
-        poses_out = []
+        positions_out = []
         for img_ts in self._img_timestamps:
             # Find bracketing GT poses
             idx = np.searchsorted(gt_ts, img_ts, side='right') - 1
@@ -212,10 +216,37 @@ class S3ELoader:
             # Linear interpolation of position
             p0 = self._gt_poses_raw[idx]
             p1 = self._gt_poses_raw[idx + 1]
-            pose = p0.copy()
-            pose[:3, 3] = (1.0 - alpha) * p0[:3, 3] + alpha * p1[:3, 3]
-            # For rotation: use nearest (GT has identity rotation from GPS)
-            poses_out.append(pose)
+            pos = (1.0 - alpha) * p0[:3, 3] + alpha * p1[:3, 3]
+            positions_out.append(pos.copy())
+
+        # Compute heading from smoothed velocity (5-frame window)
+        import math
+        positions_arr = np.array(positions_out)
+        headings = []
+        for i in range(len(positions_arr)):
+            lo = max(0, i - 3)
+            hi = min(len(positions_arr) - 1, i + 3)
+            dx = positions_arr[hi][0] - positions_arr[lo][0]
+            dy = positions_arr[hi][1] - positions_arr[lo][1]
+            headings.append(math.atan2(dy, dx))
+
+        # Build c2w poses with heading-derived rotation
+        # Camera convention: z = forward (heading), y = down (-world_z), x = right
+        poses_out = []
+        for i, (pos, theta) in enumerate(zip(positions_out, headings)):
+            z_cam = np.array([math.cos(theta), math.sin(theta), 0.0], dtype=np.float32)
+            y_cam = np.array([0.0, 0.0, -1.0], dtype=np.float32)
+            x_cam = np.cross(y_cam, z_cam)
+            norm = np.linalg.norm(x_cam)
+            if norm > 1e-6:
+                x_cam = x_cam / norm
+            else:
+                x_cam = np.array([1.0, 0.0, 0.0], dtype=np.float32)
+            R_c2w = np.column_stack([x_cam, y_cam, z_cam])
+            c2w = np.eye(4, dtype=np.float32)
+            c2w[:3, :3] = R_c2w
+            c2w[:3, 3] = pos.astype(np.float32)
+            poses_out.append(c2w)
         return poses_out
 
     def __len__(self):
@@ -235,6 +266,18 @@ class S3ELoader:
         else:
             H, W = color.shape[:2]
             depth = np.zeros((H, W), dtype=np.float32)
+
+        # Truncate far depth (stereo is unreliable beyond this range)
+        depth_trunc = self.depth_trunc
+        if depth_trunc > 0:
+            depth[depth > depth_trunc] = 0.0
+
+        # Optional image resize (for outdoor: smaller images = faster + more robust tracking)
+        if self.resize_factor != 1.0:
+            new_H = int(color.shape[0] * self.resize_factor)
+            new_W = int(color.shape[1] * self.resize_factor)
+            color = cv2.resize(color, (new_W, new_H), interpolation=cv2.INTER_LINEAR)
+            depth = cv2.resize(depth, (new_W, new_H), interpolation=cv2.INTER_NEAREST)
 
         pose = self.poses[idx]
         return color, depth, pose
@@ -444,20 +487,25 @@ def detect_loop_closures(poses, overlap_thresh=0.3, distance_thresh=2.0):
     """
     Detect potential inter-robot loop closures based on pose proximity.
     Supports N agents. Returns list of (frame_idx, agent_i, agent_j, T_rel) tuples.
+    Uses dense sampling (every 10 frames) to catch overlapping trajectories.
     """
     n_agents = len(poses)
     closures = []
     for ai in range(n_agents):
         for aj in range(ai + 1, n_agents):
             n_min = min(len(poses[ai]), len(poses[aj]))
-            step = max(1, n_min // 20)
+            # Dense sampling: check every 10 frames instead of n_min//20.
+            # With n_min=2170, old step=108 missed 99% of overlaps.
+            step = 10
+            last_lc_frame = -50  # debounce: at least 50 frames between LCs per pair
             for k in range(0, n_min, step):
                 T_i = torch.from_numpy(poses[ai][k]).float()
                 T_j = torch.from_numpy(poses[aj][k]).float()
                 dist = (T_i[:3, 3] - T_j[:3, 3]).norm().item()
-                if dist < distance_thresh:
+                if dist < distance_thresh and (k - last_lc_frame) >= 50:
                     T_rel = torch.linalg.inv(T_i) @ T_j
                     closures.append((k, ai, aj, T_rel))
+                    last_lc_frame = k
     return closures
 
 
@@ -531,7 +579,13 @@ def save_pointcloud_ply(means, filepath):
 # ---------------------------------------------------------------------------
 
 def compute_ate_rmse(gt_poses, est_poses):
-    """Compute Absolute Trajectory Error (RMSE) in meters with SE(3) alignment."""
+    """Compute Absolute Trajectory Error (RMSE) in meters with Sim(3) Umeyama alignment.
+
+    Uses full Umeyama (1991) alignment: finds scale s, rotation R, translation t
+    so that s*R@est + t ≈ gt. This is essential for datasets where SLAM operates
+    at a different metric scale than the GT (e.g. monocular SLAM, or stereo with
+    imperfect depth calibration vs GPS-based GT).
+    """
     n = min(len(gt_poses), len(est_poses))
     if n < 3:
         return float('nan')
@@ -545,7 +599,7 @@ def compute_ate_rmse(gt_poses, est_poses):
         gt_pos[i] = gt[:3, 3]
         est_pos[i] = est[:3, 3]
 
-    # SE(3) Umeyama alignment: find R, t so that R @ est + t ≈ gt
+    # Sim(3) Umeyama alignment: find s, R, t so that s*R@est + t ≈ gt
     gt_mean = gt_pos.mean(axis=0)
     est_mean = est_pos.mean(axis=0)
     gt_c = gt_pos - gt_mean
@@ -554,8 +608,13 @@ def compute_ate_rmse(gt_poses, est_poses):
     U, S, Vt = np.linalg.svd(H)
     d = np.linalg.det(Vt.T @ U.T)
     R = Vt.T @ np.diag([1, 1, d]) @ U.T
-    t = gt_mean - R @ est_mean
-    est_aligned = (R @ est_pos.T).T + t
+    # Scale: s = tr(R @ H^T) / sum(||est_c||^2)  (Umeyama 1991)
+    var_est = np.sum(est_c ** 2)
+    if var_est < 1e-10:
+        return float('nan')
+    s = np.trace(R @ H.T) / var_est
+    t = gt_mean - s * R @ est_mean
+    est_aligned = s * (R @ est_pos.T).T + t
 
     errors = np.linalg.norm(gt_pos - est_aligned, axis=1)
     return float(np.sqrt(np.mean(errors ** 2)))
@@ -789,8 +848,15 @@ def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('i
 
         t_start = time.time()
 
-        # Initialize per-agent cumulative drift for synthetic mode
+        # Initialize per-agent cumulative drift for odometry simulation.
+        # Real odometry has CORRELATED drift (errors accumulate over time),
+        # unlike independent GPS noise. Consensus can correct correlated drift
+        # because loop closures detect when two robots observe the same place
+        # with different accumulated errors.
         drift_poses = [torch.eye(4, device=device) for _ in range(n_agents)]
+        # Per-frame drift parameters (random walk)
+        odom_drift_trans = system_cfg.get("odom_drift_trans", 0.0)  # m/frame std
+        odom_drift_rot = system_cfg.get("odom_drift_rot", 0.0)     # rad/frame std
 
         # Main processing loop
         for t in range(n_frames):
@@ -822,7 +888,34 @@ def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('i
                     robots[agent_id].current_pose = torch.linalg.inv(noisy_pose)
 
                 # Feed frame to robot (LocalSLAMWrapper produces real poses)
-                robots[agent_id].process_frame(rgb_tensor, depth_tensor, timestamp)
+                # Odometry drift mode: accumulate random-walk drift on GT poses.
+                # This models real IMU/wheel odometry where errors grow over time.
+                # Consensus + loop closures should reduce this accumulated drift.
+                gt_c2w_arg = None
+                if (odom_drift_trans > 0 or odom_drift_rot > 0) and slam_wrappers[agent_id] is not None:
+                    gt_c2w_t = torch.from_numpy(gt_pose).float().to(device)
+                    # Accumulate per-frame drift (random walk on SE(3))
+                    drift_step = torch.eye(4, device=device)
+                    if odom_drift_trans > 0:
+                        drift_step[:3, 3] = torch.randn(3, device=device) * odom_drift_trans
+                    if odom_drift_rot > 0:
+                        # Small-angle rotation around random axis
+                        axis = torch.randn(3, device=device)
+                        axis = axis / axis.norm().clamp(min=1e-8)
+                        angle = torch.randn(1, device=device).item() * odom_drift_rot
+                        c, s = math.cos(angle), math.sin(angle)
+                        K = torch.zeros(3, 3, device=device)
+                        K[0, 1] = -axis[2]; K[0, 2] = axis[1]
+                        K[1, 0] = axis[2];  K[1, 2] = -axis[0]
+                        K[2, 0] = -axis[1]; K[2, 1] = axis[0]
+                        drift_step[:3, :3] = torch.eye(3, device=device) * c + (1 - c) * axis.unsqueeze(1) @ axis.unsqueeze(0) + s * K
+                    drift_poses[agent_id] = drift_poses[agent_id] @ drift_step
+                    # Apply accumulated drift to GT pose
+                    gt_c2w_arg = gt_c2w_t @ drift_poses[agent_id]
+                elif system_cfg.get("use_gt_tracking", False) and slam_wrappers[agent_id] is not None:
+                    gt_c2w_arg = torch.from_numpy(gt_pose).float().to(device)
+                robots[agent_id].process_frame(rgb_tensor, depth_tensor, timestamp,
+                                               gt_c2w=gt_c2w_arg)
 
                 # Record trajectories (GT is c2w, SLAM output is w2c — invert)
                 gt_trajectories[agent_id].append(gt_pose)
@@ -944,6 +1037,15 @@ def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('i
                     scene_results[f"agent_{agent_id}_{k}"] = v
                 print(f"  Agent {agent_id}: PSNR={rm['PSNR']:.2f}, SSIM={rm['SSIM']:.4f}, "
                       f"LPIPS={rm['LPIPS']:.4f}, DepthL1={rm['DepthL1']:.4f}")
+
+        # Save rendered images
+        for agent_id in range(n_agents):
+            w = slam_wrappers[agent_id]
+            if w is not None:
+                img_dir = os.path.join(output_dir, "renders", experiment_name, f"agent_{agent_id}")
+                saved = w.save_render_images(img_dir, max_images=5)
+                if saved:
+                    print(f"  Agent {agent_id}: saved {len(saved)} render images to {img_dir}")
 
         # Save trajectories
         if config.get("output", {}).get("save_trajectory", True):

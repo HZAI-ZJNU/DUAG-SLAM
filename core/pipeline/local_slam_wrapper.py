@@ -148,7 +148,8 @@ class LocalSLAMWrapper:
     # ─────────────────────────────────────────────────────────────────────────
 
     def process_frame(
-        self, rgb: torch.Tensor, depth: torch.Tensor, timestamp: float
+        self, rgb: torch.Tensor, depth: torch.Tensor, timestamp: float,
+        gt_c2w: Optional[torch.Tensor] = None,
     ) -> None:
         """
         Run one tracking + (optionally) mapping step.
@@ -157,6 +158,8 @@ class LocalSLAMWrapper:
             rgb:   [H, W, 3] float32 in [0,1]  OR  [3, H, W] float32 in [0,1]
             depth: [H, W] float32 in meters    OR  [H, W, 1] float32
             timestamp: frame timestamp (seconds)
+            gt_c2w: Optional [4,4] ground-truth camera-to-world pose.
+                    If provided, skips tracking optimisation and uses this pose.
         """
         # Normalise input shapes
         if rgb.dim() == 3 and rgb.shape[2] == 3:
@@ -177,7 +180,15 @@ class LocalSLAMWrapper:
             return
 
         # ── Tracking ──
-        self._tracking(uid, viewpoint)
+        if gt_c2w is not None:
+            # GPS-aided mode: use provided pose as initial guess, then refine
+            # via photometric + depth tracking optimisation.
+            w2c = torch.linalg.inv(gt_c2w.to(self.device))
+            viewpoint.update_RT(w2c[:3, :3], w2c[:3, 3])
+            # Run tracking from this initialization (skip CV motion model init)
+            self._tracking(uid, viewpoint, skip_motion_init=True)
+        else:
+            self._tracking(uid, viewpoint)
 
         # ── Keyframe decision + mapping ──
         vis_filter = self._occ_aware_visibility.get(self._last_kf_idx)
@@ -195,10 +206,13 @@ class LocalSLAMWrapper:
             )
 
             # Update window (MonoGS-style geometric eviction)
-            self._current_window, _ = self._add_to_window(
+            self._current_window, removed_frame = self._add_to_window(
                 uid, self._cur_visibility, self._occ_aware_visibility,
                 self._current_window,
             )
+            # Clean GPU tensors of evicted keyframes to prevent O(N_kf) memory growth
+            if removed_frame is not None and removed_frame in self._cameras:
+                self._cameras[removed_frame].clean()
 
             # Run mapping iterations (jointly optimises Gaussians + camera poses)
             self._mapping(self._current_window, iters=self.mapping_itr_num)
@@ -255,11 +269,11 @@ class LocalSLAMWrapper:
 
     def as_slam_step(self):
         """
-        Return a callable ``(rgb, depth, timestamp) -> (GaussianMap, pose)``
+        Return a callable ``(rgb, depth, timestamp, gt_c2w=None) -> (GaussianMap, pose)``
         suitable for injection into RobotNode as ``slam_step``.
         """
-        def _step(rgb, depth, timestamp):
-            self.process_frame(rgb, depth, timestamp)
+        def _step(rgb, depth, timestamp, gt_c2w=None):
+            self.process_frame(rgb, depth, timestamp, gt_c2w=gt_c2w)
             return self.get_gaussian_map(), self.get_current_pose()
         return _step
 
@@ -374,13 +388,36 @@ class LocalSLAMWrapper:
     # Private – Tracking
     # ─────────────────────────────────────────────────────────────────────────
 
-    def _tracking(self, uid: int, viewpoint: Camera) -> None:
-        """Optimise camera pose given current Gaussian map."""
-        # Initialise from previous frame's pose
-        prev_uid = uid - 1
-        if prev_uid in self._cameras:
-            prev = self._cameras[prev_uid]
-            viewpoint.update_RT(prev.R, prev.T)
+    def _tracking(self, uid: int, viewpoint: Camera, skip_motion_init: bool = False) -> None:
+        """Optimise camera pose given current Gaussian map.
+        
+        If skip_motion_init=True, the caller already set the initial pose
+        (e.g. from noisy GPS). A prior term penalises deviations from that
+        initialisation, controlled by config gps_prior_weight.
+        """
+        # Constant-velocity motion model: extrapolate from last 2 frames
+        # Skip if caller already set the initial pose (e.g. GPS-aided mode)
+        if not skip_motion_init:
+            prev_uid = uid - 1
+            prevprev_uid = uid - 2
+            if prev_uid in self._cameras and prevprev_uid in self._cameras:
+                prev = self._cameras[prev_uid]
+                prevprev = self._cameras[prevprev_uid]
+                # Build 4x4 w2c matrices
+                T_prev = torch.eye(4, device=self.device)
+                T_prev[:3, :3] = prev.R
+                T_prev[:3, 3] = prev.T
+                T_prevprev = torch.eye(4, device=self.device)
+                T_prevprev[:3, :3] = prevprev.R
+                T_prevprev[:3, 3] = prevprev.T
+                # delta = T_prev @ T_prevprev^{-1} (relative motion in world frame)
+                delta = T_prev @ torch.linalg.inv(T_prevprev)
+                # Predicted: apply same delta to T_prev
+                T_predicted = delta @ T_prev
+                viewpoint.update_RT(T_predicted[:3, :3], T_predicted[:3, 3])
+            elif prev_uid in self._cameras:
+                prev = self._cameras[prev_uid]
+                viewpoint.update_RT(prev.R, prev.T)
 
         opt_params = [
             {"params": [viewpoint.cam_rot_delta],
@@ -396,7 +433,19 @@ class LocalSLAMWrapper:
 
         self._cur_visibility = None
 
-        for _ in range(self.tracking_itr_num):
+        # GPS prior: when the initial pose comes from GPS, penalise large
+        # deviations (cam_rot_delta and cam_trans_delta are zero-initialised,
+        # so penalising their norm keeps the pose near the GPS measurement).
+        gps_prior_weight = 0.0
+        if skip_motion_init:
+            gps_prior_weight = self.config["Training"].get("gps_prior_weight", 100.0)
+
+        # For outdoor scenes with large depths, the converged threshold (1e-4)
+        # can trigger prematurely because gradients are small. Run at least
+        # min_tracking_itr before checking convergence.
+        min_tracking_itr = self.config["Training"].get("min_tracking_itr", 0)
+
+        for itr in range(self.tracking_itr_num):
             render_pkg = render(
                 viewpoint, self.gaussian_model, self.rasterizer_pipe, self.background,
             )
@@ -409,13 +458,21 @@ class LocalSLAMWrapper:
 
             pose_optimizer.zero_grad()
             loss = get_loss_tracking(self.config, image, depth_r, opacity, viewpoint)
+
+            # GPS prior: keep pose close to GPS initialisation
+            if gps_prior_weight > 0:
+                loss = loss + gps_prior_weight * (
+                    viewpoint.cam_rot_delta.pow(2).sum()
+                    + viewpoint.cam_trans_delta.pow(2).sum()
+                )
+
             loss.backward()
 
             with torch.no_grad():
                 pose_optimizer.step()
                 converged = update_pose(viewpoint)
 
-            if converged:
+            if converged and itr >= min_tracking_itr:
                 break
 
         self._median_depth = get_median_depth(
@@ -769,6 +826,47 @@ class LocalSLAMWrapper:
             "LPIPS":   float(np.mean(lpipses))  if lpipses  else float("nan"),
             "DepthL1": float(np.mean(depth_l1s)) if depth_l1s else float("nan"),
         }
+
+    def save_render_images(self, output_dir: str, max_images: int = 5) -> list:
+        """
+        Save side-by-side rendered vs GT images for a few keyframes.
+        Returns list of saved file paths.
+        """
+        import os
+        from PIL import Image
+
+        os.makedirs(output_dir, exist_ok=True)
+        saved = []
+        # Use last keyframes — these are the ones the current map covers well
+        kf_ids = self._kf_indices[-max_images:]
+
+        with torch.no_grad():
+            for kid in kf_ids:
+                vp = self._cameras.get(kid)
+                if vp is None or vp.original_image is None:
+                    continue
+
+                pkg = render(vp, self.gaussian_model, self.rasterizer_pipe, self.background)
+                if pkg is None:
+                    continue
+
+                rendered = pkg["render"].clamp(0, 1).cpu()  # [3, H, W]
+                gt = vp.original_image.cpu().clamp(0, 1)    # [3, H, W]
+
+                # Side by side: GT | Rendered
+                cat = torch.cat([gt, rendered], dim=2)  # [3, H, 2*W]
+                img_np = (cat.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
+                path = os.path.join(output_dir, f"kf_{kid:05d}_gt_vs_render.png")
+                Image.fromarray(img_np).save(path)
+                saved.append(path)
+
+                # Also save rendered-only
+                rend_np = (rendered.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
+                rpath = os.path.join(output_dir, f"kf_{kid:05d}_render.png")
+                Image.fromarray(rend_np).save(rpath)
+                saved.append(rpath)
+
+        return saved
 
     def refine_map(self, iters: int = 3000) -> None:
         """Run additional mapping iterations on the keyframe window after experiment."""

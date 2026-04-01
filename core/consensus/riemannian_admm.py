@@ -115,14 +115,24 @@ class RiemannianADMM:
             # Gradient: -(dual + rho * residual)  (since we want to minimize)
             grad = grad - (dual + self.rho * r_ij)
 
-        # Local pose-graph edges (odometry constraints)
-        for node_i, node_j, T_rel, info in pose_graph.edges:
+        # Local pose-graph edges — use only the few most recent edges (not ALL
+        # 2000+ odometry edges).  With many edges × high weight, odometry
+        # overwhelms consensus and prevents inter-robot correction.
+        # Also cap individual edge weight to be at most rho * 10.
+        max_odom_weight = self.rho * 10.0
+        max_odom_edges = 5
+        edges = pose_graph.edges
+        if len(edges) > max_odom_edges:
+            edges = edges[-max_odom_edges:]
+        for node_i, node_j, T_rel, info in edges:
             if node_i in pose_graph.poses and node_j in pose_graph.poses:
                 T_a = pose_graph.poses[node_i]
                 T_b = pose_graph.poses[node_j]
                 T_pred = torch.linalg.inv(T_a) @ T_b
                 r_edge = se3_log(torch.linalg.inv(T_rel) @ T_pred)
                 weight = info.diag().mean() if info.dim() == 2 else info.mean()
+                weight = min(weight.item() if isinstance(weight, Tensor) else weight,
+                             max_odom_weight)
                 grad = grad - weight * r_edge
 
         # Adaptive learning rate: scale inversely with total gradient magnitude

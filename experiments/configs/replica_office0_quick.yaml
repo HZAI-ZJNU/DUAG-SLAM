@@ -39,4 +39,4 @@ output:
   save_metrics: true
 
 seed: 42
-frame_limit: 800
+frame_limit: 200

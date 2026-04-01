@@ -80,7 +80,8 @@ def get_loss_tracking_rgbd(
         dtype=torch.float32, device=image.device
     )[None]
     depth_pixel_mask = (gt_depth > 0.01).view(*depth.shape)
-    opacity_mask = (opacity > 0.95).view(*depth.shape)
+    opacity_thresh = config["Training"].get("tracking_opacity_thresh", 0.95)
+    opacity_mask = (opacity > opacity_thresh).view(*depth.shape)
 
     l1_rgb = get_loss_tracking_rgb(config, image, depth, opacity, viewpoint)
     depth_mask = depth_pixel_mask * opacity_mask
