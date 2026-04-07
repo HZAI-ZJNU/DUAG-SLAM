@@ -53,5 +53,5 @@ validate:
 hypothesis: "Outdoor generalization and N-robot scaling."
 
 seed: 42
-frame_limit: 500
-frame_step: 10
+# frame_limit: full run
+frame_step: 1
