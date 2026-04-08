@@ -1,0 +1,4 @@
+# S3E Playground_2 — 100-frame quick viz run
+inherit_from: s3e_playground2_quick.yaml
+experiment_name: "duag_c_s3e_playground2_100"
+frame_limit: 100

@@ -28,6 +28,7 @@ system:
   fim_window_keyframes: 10
   max_gaussians: 100000
   n_init_gaussians: 500
+  refine_iterations: 3000
   device: "cuda"
 
 monogs_config_path: repos/MonoGS/configs/rgbd/replica/base_config.yaml

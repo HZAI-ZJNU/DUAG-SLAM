@@ -686,7 +686,8 @@ def load_config(config_path: str) -> dict:
 # ---------------------------------------------------------------------------
 
 def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('inf'),
-                   loss_rate: float = 0.0):
+                   loss_rate: float = 0.0, viz: bool = False,
+                   save_video: str = None):
     config = load_config(config_path)
 
     experiment_name = config["experiment_name"]
@@ -846,6 +847,17 @@ def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('i
 
         print(f"  Detected {len(loop_closures)} potential loop closures")
 
+        # Real-time visualization
+        viewer = None
+        if viz:
+            from core.visualization.realtime_viewer import RealtimeViewer
+            viewer = RealtimeViewer(
+                n_agents=n_agents,
+                panel_h=min(340, dataset_cfg.get("cam", {}).get("H", 340)),
+                panel_w=min(600, dataset_cfg.get("cam", {}).get("W", 600)),
+                save_video=save_video,
+            )
+
         t_start = time.time()
 
         # Initialize per-agent cumulative drift for odometry simulation.
@@ -857,6 +869,22 @@ def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('i
         # Per-frame drift parameters (random walk)
         odom_drift_trans = system_cfg.get("odom_drift_trans", 0.0)  # m/frame std
         odom_drift_rot = system_cfg.get("odom_drift_rot", 0.0)     # rad/frame std
+
+        # Track previous GT pose per agent to detect heading discontinuities.
+        # S3E GPS at ~1Hz can produce sudden ~90° heading jumps between
+        # consecutive image frames when the 2nd GPS fix arrives.  When this
+        # happens the Gaussians built with the old heading are misaligned; we
+        # must re-initialise the SLAM wrapper to rebuild them in the new frame.
+        prev_gt_c2w = [None] * n_agents
+        heading_reinit_thresh = system_cfg.get("heading_reinit_thresh_deg", 30.0)
+        # Consecutive dark-frame counter for auto-reinit (outdoor scene recovery)
+        dark_frame_count = [0] * n_agents
+        dark_reinit_thresh = system_cfg.get("dark_reinit_frames", 3)  # reinit after N consecutive near-black renders
+        # Periodic reinit: for outdoor forward-motion scenes, the Gaussian map
+        # degrades after ~20 frames because Gaussians created from one viewpoint
+        # look bad from new angles. Reinit every N frames to keep quality high.
+        periodic_reinit_interval = system_cfg.get("periodic_reinit_interval", 0)  # 0=disabled
+        frames_since_reinit = [0] * n_agents
 
         # Main processing loop
         for t in range(n_frames):
@@ -914,14 +942,130 @@ def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('i
                     gt_c2w_arg = gt_c2w_t @ drift_poses[agent_id]
                 elif system_cfg.get("use_gt_tracking", False) and slam_wrappers[agent_id] is not None:
                     gt_c2w_arg = torch.from_numpy(gt_pose).float().to(device)
+
+                # ── Heading discontinuity detection (S3E sparse GPS) ──
+                # When the GT heading jumps by more than `heading_reinit_thresh`
+                # degrees between consecutive frames, the Gaussians built with
+                # the old heading would be completely misaligned.  Re-init the
+                # SLAM wrapper so it seeds fresh Gaussians in the new frame.
+                gt_c2w_tensor = torch.from_numpy(gt_pose).float()
+                if prev_gt_c2w[agent_id] is not None and slam_wrappers[agent_id] is not None:
+                    R_prev = prev_gt_c2w[agent_id][:3, :3]
+                    R_curr = gt_c2w_tensor[:3, :3]
+                    # Rotation difference in angle-axis magnitude (degrees)
+                    R_delta = R_prev.T @ R_curr
+                    cos_angle = ((R_delta.trace() - 1.0) / 2.0).clamp(-1.0, 1.0)
+                    angle_deg = float(torch.acos(cos_angle).item() * 180.0 / math.pi)
+                    if angle_deg > heading_reinit_thresh:
+                        print(f"  [Agent {agent_id}] t={t}: heading jump {angle_deg:.1f}° > {heading_reinit_thresh}° → re-initialising SLAM")
+                        import copy as _copy
+                        mc_reinit = _copy.deepcopy(monogs_config)
+                        mc_reinit.setdefault("Training", {})["max_gaussians"] = system_cfg.get("max_gaussians", 80000)
+                        slam_wrappers[agent_id] = LocalSLAMWrapper(config=mc_reinit, device=device)
+                        robots[agent_id]._slam_step = slam_wrappers[agent_id].as_slam_step()
+                        # Reset drift accumulator so re-init starts clean
+                        drift_poses[agent_id] = torch.eye(4, device=device)
+                        frames_since_reinit[agent_id] = 0
+                        # Recompute gt_c2w_arg with reset drift
+                        if odom_drift_trans > 0 or odom_drift_rot > 0:
+                            gt_c2w_arg = gt_c2w_tensor.to(device)  # clean GT, no drift yet
+                prev_gt_c2w[agent_id] = gt_c2w_tensor
+
                 robots[agent_id].process_frame(rgb_tensor, depth_tensor, timestamp,
                                                gt_c2w=gt_c2w_arg)
+
+                # ── Per-frame diagnostic: save input vs rendered side-by-side ──
+                w = slam_wrappers[agent_id]
+                if w is not None and w._last_rendered_rgb is not None:
+                    diag_dir = os.path.join(output_dir, "frame_diag", scene, f"agent_{agent_id}")
+                    os.makedirs(diag_dir, exist_ok=True)
+                    # Input RGB: [H,W,3] float [0,1]
+                    inp_np = color  # already numpy [H,W,3] float [0,1]
+                    # Rendered: [3,H,W] tensor -> [H,W,3] numpy
+                    ren_np = w._last_rendered_rgb.cpu().permute(1, 2, 0).numpy()
+                    ren_np = np.clip(ren_np, 0, 1)
+                    # Side by side
+                    combined = np.concatenate([inp_np, ren_np], axis=1)
+                    combined_u8 = (combined * 255).astype(np.uint8)
+                    from PIL import Image as _PILImg
+                    _PILImg.fromarray(combined_u8).save(
+                        os.path.join(diag_dir, f"t{t:04d}.png"))
+
+                # ── Dark-render auto-recovery ──
+                # When the Gaussian map no longer covers the visible scene
+                # (e.g. robot turns a corner), the render goes near-black.
+                # After `dark_reinit_frames` consecutive dark frames, reinit
+                # the SLAM wrapper from the current frame so Gaussians are
+                # seeded in the correct world region.
+                w = slam_wrappers[agent_id]
+                if w is not None and w._last_rendered_rgb is not None:
+                    render_brightness = w._last_rendered_rgb.mean().item()
+                    if render_brightness < 0.02:
+                        dark_frame_count[agent_id] += 1
+                        if dark_frame_count[agent_id] >= dark_reinit_thresh:
+                            print(f"  [Agent {agent_id}] t={t}: {dark_frame_count[agent_id]} consecutive dark frames → re-initialising SLAM")
+                            import copy as _copy2
+                            mc_reinit2 = _copy2.deepcopy(monogs_config)
+                            mc_reinit2.setdefault("Training", {})["max_gaussians"] = system_cfg.get("max_gaussians", 80000)
+                            slam_wrappers[agent_id] = LocalSLAMWrapper(config=mc_reinit2, device=device)
+                            robots[agent_id]._slam_step = slam_wrappers[agent_id].as_slam_step()
+                            drift_poses[agent_id] = torch.eye(4, device=device)
+                            # Re-process current frame with fresh wrapper and
+                            # update robot state so trajectory/viewer use the new map
+                            gt_c2w_fresh = torch.from_numpy(gt_pose).float().to(device)
+                            result = robots[agent_id]._slam_step(
+                                rgb_tensor, depth_tensor, timestamp, gt_c2w=gt_c2w_fresh)
+                            if result is not None:
+                                robots[agent_id].gaussian_map, robots[agent_id].current_pose = result
+                            dark_frame_count[agent_id] = 0
+                    else:
+                        dark_frame_count[agent_id] = 0
+
+                # ── Periodic reinit for outdoor forward-motion ──
+                frames_since_reinit[agent_id] += 1
+                if (periodic_reinit_interval > 0
+                        and frames_since_reinit[agent_id] >= periodic_reinit_interval):
+                    print(f"  [Agent {agent_id}] t={t}: periodic reinit after {frames_since_reinit[agent_id]} frames")
+                    import copy as _copy3
+                    mc_reinit3 = _copy3.deepcopy(monogs_config)
+                    mc_reinit3.setdefault("Training", {})["max_gaussians"] = system_cfg.get("max_gaussians", 80000)
+                    slam_wrappers[agent_id] = LocalSLAMWrapper(config=mc_reinit3, device=device)
+                    robots[agent_id]._slam_step = slam_wrappers[agent_id].as_slam_step()
+                    drift_poses[agent_id] = torch.eye(4, device=device)
+                    gt_c2w_fresh = torch.from_numpy(gt_pose).float().to(device)
+                    result = robots[agent_id]._slam_step(
+                        rgb_tensor, depth_tensor, timestamp, gt_c2w=gt_c2w_fresh)
+                    if result is not None:
+                        robots[agent_id].gaussian_map, robots[agent_id].current_pose = result
+                    frames_since_reinit[agent_id] = 0
+                    dark_frame_count[agent_id] = 0
 
                 # Record trajectories (GT is c2w, SLAM output is w2c — invert)
                 gt_trajectories[agent_id].append(gt_pose)
                 est_w2c = robots[agent_id].current_pose.detach().cpu().numpy()
                 est_c2w = np.linalg.inv(est_w2c)
                 est_trajectories[agent_id].append(est_c2w)
+
+                # Update real-time viewer
+                if viewer is not None:
+                    input_rgb_np = color  # already [H,W,3] float [0,1] from loader
+                    rendered_rgb_np = None
+                    w = slam_wrappers[agent_id]
+                    if w is not None and w._last_rendered_rgb is not None:
+                        # [3,H,W] GPU tensor -> [H,W,3] numpy
+                        rendered_rgb_np = w._last_rendered_rgb.cpu().permute(1, 2, 0).numpy()
+                    n_gauss = 0
+                    if w is not None and w.gaussian_model is not None and w.gaussian_model._xyz is not None:
+                        n_gauss = w.gaussian_model._xyz.shape[0]
+                    viewer.update(agent_id, input_rgb_np, rendered_rgb_np,
+                                  est_pose=est_c2w, gt_pose=gt_pose,
+                                  n_gaussians=n_gauss)
+
+            # Show viewer after all agents updated for this frame
+            if viewer is not None:
+                if not viewer.show():
+                    print("  Visualization closed by user (q)")
+                    break
 
             timestamps.append(timestamp)
 
@@ -949,7 +1093,18 @@ def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('i
                     loop_closure_injected.add(lc_key)
 
             # Progress reporting and memory management
-            if (t + 1) % 100 == 0 or t == n_frames - 1:
+            for agent_id in range(n_agents):
+                w = slam_wrappers[agent_id]
+                if w is not None and w._last_rendered_rgb is not None:
+                    ng = w.gaussian_model._xyz.shape[0] if w.gaussian_model is not None else 0
+                    bright = w._last_rendered_rgb.mean().item()
+                    nkf = len(w._kf_indices)
+                    lkf = w._last_kf_idx
+                    fc = w._frame_count
+                    md = getattr(w, '_median_depth', 0)
+                    md_val = md.item() if hasattr(md, 'item') else float(md) if md else 0
+                    print(f"  t={t:3d} A{agent_id} N={ng:6d} bright={bright:.3f} kf={nkf} last_kf={lkf} median_d={md_val:.2f} fc={fc}")
+            if (t + 1) % 10 == 0 or t == n_frames - 1:
                 elapsed = time.time() - t_start
                 fps = (t + 1) / elapsed
                 gpu_mb = torch.cuda.max_memory_allocated() / 1e6 if torch.cuda.is_available() else 0
@@ -960,6 +1115,9 @@ def run_experiment(config_path: str, bandwidth_bytes_per_frame: float = float('i
 
         elapsed_total = time.time() - t_start
         print(f"  Done in {elapsed_total:.1f}s")
+
+        if viewer is not None:
+            viewer.close()
 
         # Compute metrics
         scene_results = {"scene": scene, "n_frames": n_frames, "elapsed_s": elapsed_total}
@@ -1399,7 +1557,14 @@ def run_comm_sweep(config_path: str):
 def main():
     parser = argparse.ArgumentParser(description="Run DUAG-C experiment")
     parser.add_argument("--config", required=True, help="Path to config YAML")
+    parser.add_argument("--viz", action="store_true",
+                        help="Enable real-time visualization window")
+    parser.add_argument("--save-video", type=str, default=None,
+                        help="Save visualization to MP4 file (implies --viz)")
     args = parser.parse_args()
+
+    if args.save_video:
+        args.viz = True
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
@@ -1414,7 +1579,7 @@ def main():
     elif "robot_subsets" in config.get("dataset", {}):
         run_kimera_subsets(args.config)
     else:
-        run_experiment(args.config)
+        run_experiment(args.config, viz=args.viz, save_video=args.save_video)
 
 
 if __name__ == "__main__":

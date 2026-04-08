@@ -1,5 +1,7 @@
 # MonoGS base config for S3E dataset
 # Camera: 1224x1024, stereo, depth from stereo matching
+# NOTE: S3E has only ~23% valid depth pixels (stereo), so we use much
+#       denser point sampling than indoor defaults to compensate.
 Results:
   save_results: True
   save_dir: "results"
@@ -11,10 +13,10 @@ Results:
 
 Dataset:
   sensor_type: 'depth'
-  pcd_downsample: 16
-  pcd_downsample_init: 8
+  pcd_downsample: 6            # was 2 — reduce new Gaussians per KF from ~31K to ~10K
+  pcd_downsample_init: 3       # downsample init — leave room for new-view Gaussians
   adaptive_pointsize: True
-  point_size: 0.05
+  point_size: 0.02             # small — actual scale controlled by optimization + clamp
   type: 'replica'
   Calibration:
     fx: 586.385866
@@ -32,38 +34,48 @@ Dataset:
     distorted: False
 
 Training:
-  init_itr_num: 1050
-  init_gaussian_update: 100
+  init_itr_num: 1500           # was 1050 — more iters for sparser init
+  init_gaussian_update: 80     # was 100  — densify more often during init
   init_gaussian_reset: 500
-  init_gaussian_th: 0.005
-  init_gaussian_extent: 30
+  init_gaussian_th: 0.005      # densification gradient threshold
+  init_gaussian_extent: 5      # 6*5=30m prune — tighter than 60m (was 10)
   tracking_itr_num: 200
   min_tracking_itr: 80
-  mapping_itr_num: 150
-  gaussian_update_every: 150
+  mapping_itr_num: 120         # reduced from 250 — prevent overfitting to narrow viewpoints
+  gaussian_update_every: 100   # was 150  — densify more often
   gaussian_update_offset: 50
-  gaussian_th: 0.7
-  gaussian_extent: 5.0
+  gaussian_th: 0.5             # densification gradient threshold
+  gaussian_extent: 0.5         # 6*0.5=3.0m prune — tighter outdoor; max_scale_prune=0.3m
   gaussian_reset: 2001
-  size_threshold: 20
-  kf_interval: 4
-  window_size: 10
+  size_threshold: 20           # prune big screen-space Gaussians
+  kf_interval: 2               # was 4   — more keyframes = more coverage
+  window_size: 12              # was 10  — larger window
   pose_window: 5
   edge_threshold: 4
   rgb_boundary_threshold: 0.01
-  kf_translation: 0.08
-  kf_min_translation: 0.04
-  kf_overlap: 0.90
+  kf_translation: 0.02         # halved — agents with median_d=7m need only 0.14m motion
+  kf_min_translation: 0.005    # very low — allow KF with tiny motion + visibility change
+  kf_overlap: 0.85             # was 0.90 — accept slightly less overlap
+  kf_max_interval: 10          # force keyframe every 10 frames if no KF triggered
   prune_mode: 'slam'
   single_thread: True
   spherical_harmonics: False
-  max_gaussians: 50000
-  alpha: 0.1
+  max_gaussians: 300000
+  alpha: 0.3                    # 30% RGB, 70% depth — trust depth (GT), RGB misleads outdoor
+  rgb_depth_mask: True          # only compute RGB loss where depth is valid — prevents sky blobs
   tracking_opacity_thresh: 0.3
+  max_gaussian_scale: 0.1       # 10cm — much smaller to prevent dark blob artifacts
+  iso_loss_weight: 20.0         # moderate isotropic reg — prevent flat cutout Gaussians
+  opacity_reg_weight: 0.02      # mild opacity reg — discourage fully-opaque blobs
+  sky_clear_weight: 2.0         # Soft gradient push; hard cull does the heavy lifting
+  alpha_composite_viz: True     # blend render with GT input at low-alpha pixels for viz
   lr:
-    cam_rot_delta: 0.005
-    cam_trans_delta: 0.02
-  gps_prior_weight: 10.0
+    cam_rot_delta: 0.003       # slower rotation update — trust GPS more
+    cam_trans_delta: 0.01      # slower translation update — trust GPS more
+  gps_prior_weight: 500.0      # strong GPS prior — GPS is accurate (<1cm for static agents)
+  gt_pose_mode: True            # skip tracking, use GT/GPS pose directly (outdoor)
+  max_gps_drift: 0.5           # hard-clamp: max 50cm translation drift from GPS
+  max_gps_rot_drift: 5.0       # hard-clamp: max 5° rotation drift from GPS
 
 opt_params:
   iterations: 30000
@@ -73,8 +85,8 @@ opt_params:
   position_lr_max_steps: 30000
   feature_lr: 0.0025
   opacity_lr: 0.05
-  scaling_lr: 0.001
-  rotation_lr: 0.001
+  scaling_lr: 0.0005            # slower scale changes — prevent Gaussians from becoming flat
+  rotation_lr: 0.0005           # slower rotation — prevent snapping to single-view orientation
   percent_dense: 0.01
   lambda_dssim: 0.2
   densification_interval: 100
@@ -88,7 +100,7 @@ model_params:
   source_path: ""
   model_path: ""
   resolution: -1
-  white_background: False
+  white_background: False      # black bg — sky clearance pushes Gaussians out, alpha-composite fills viz
   data_device: "cuda"
 
 pipeline_params:

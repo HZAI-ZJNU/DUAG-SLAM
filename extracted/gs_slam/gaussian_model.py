@@ -142,7 +142,11 @@ class GaussianModel:
         point_size = self.config["Dataset"]["point_size"]
         if "adaptive_pointsize" in self.config["Dataset"]:
             if self.config["Dataset"]["adaptive_pointsize"]:
-                point_size = min(0.05, point_size * np.median(depth))
+                depth_arr = np.asarray(depth)
+                valid_depth = depth_arr[depth_arr > 0]
+                if valid_depth.size > 0:
+                    point_size = min(0.05, point_size * np.median(valid_depth))
+                # else: keep configured point_size as-is
         rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(
             rgb,
             depth,
@@ -192,6 +196,9 @@ class GaussianModel:
             * point_size
         )
         scales = torch.log(torch.sqrt(dist2))[..., None]
+        # Cap initial scale to prevent oversized Gaussians in sparse outdoor scenes
+        max_init_scale = torch.log(torch.tensor(0.3, device="cuda"))  # 30cm max initial
+        scales = scales.clamp(max=max_init_scale.item())
         if not self.isotropic:
             scales = scales.repeat(1, 3)
 
@@ -619,6 +626,11 @@ class GaussianModel:
             self.get_scaling[selected_pts_mask].repeat(N, 1) / (0.8 * N)
         )
         new_rotation = self._rotation[selected_pts_mask].repeat(N, 1)
+        # Add small rotation noise so children aren't locked to parent orientation.
+        # This helps outdoor scenes where parent rotation is view-biased.
+        rot_noise = torch.randn_like(new_rotation) * 0.05
+        new_rotation = new_rotation + rot_noise
+        new_rotation = new_rotation / new_rotation.norm(dim=-1, keepdim=True).clamp(min=1e-8)
         new_features_dc = self._features_dc[selected_pts_mask].repeat(N, 1, 1)
         new_features_rest = self._features_rest[selected_pts_mask].repeat(N, 1, 1)
         new_opacity = self._opacity[selected_pts_mask].repeat(N, 1)

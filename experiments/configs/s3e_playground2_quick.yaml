@@ -7,7 +7,7 @@ dataset:
   scenes: ["S3E_Playground_2"]
   n_agents: 3
   depth_scale: 1000.0
-  depth_trunc: 15.0
+  depth_trunc: 10.0           # was 15.0 — stereo at >10m is unreliable
   resize_factor: 0.5
   cam:
     H: 512
@@ -28,9 +28,10 @@ system:
   lambda_gauss: 1.0
   gaussian_match_thresh: 0.10
   fim_window_keyframes: 10
-  max_gaussians: 50000
+  max_gaussians: 300000
   n_init_gaussians: 500
   device: "cuda"
+  periodic_reinit_interval: 20    # reinit every 20 frames — outdoor forward-motion
   loop_closure_distance_thresh: 5.0
   # Odometry drift mode: simulate realistic IMU/wheel odometry drift.
   # Errors accumulate over time (random walk on SE(3)).
@@ -39,6 +40,7 @@ system:
   odom_drift_trans: 0.003   # m/frame std (3mm)
   odom_drift_rot: 0.0005    # rad/frame std (~0.03°)
 
+frame_limit: 100
 monogs_config_path: experiments/configs/s3e_monogs_base.yaml
 
 output:

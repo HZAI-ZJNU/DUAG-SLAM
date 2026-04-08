@@ -13,6 +13,7 @@
 #   local_slam.rasterizer_pipe          -> munchified pipeline_params
 #   local_slam.background               -> torch.Tensor [3]
 
+import math
 import torch
 import numpy as np
 from typing import Optional
@@ -23,7 +24,7 @@ from extracted.gs_slam.gaussian_model import GaussianModel
 from extracted.gs_slam.camera_utils import Camera
 from extracted.gs_slam.graphics_utils import getProjectionMatrix2, getWorld2View2, focal2fov
 from extracted.gs_slam.renderer import render
-from extracted.gs_slam.pose_utils import update_pose
+from extracted.gs_slam.pose_utils import update_pose, SO3_exp
 from extracted.gs_slam.slam_utils import (
     get_loss_tracking,
     get_loss_mapping,
@@ -80,8 +81,9 @@ class LocalSLAMWrapper:
         # Opt params
         self.opt_params = munchify(config["opt_params"])
 
-        # Background (black for indoor)
-        self.background = torch.tensor([0, 0, 0], dtype=torch.float32, device=device)
+        # Background colour: white_background=True in model_params → white; otherwise black
+        bg_val = 1.0 if config.get("model_params", {}).get("white_background", False) else 0.0
+        self.background = torch.tensor([bg_val, bg_val, bg_val], dtype=torch.float32, device=device)
 
         # Training hyper-params
         train = config["Training"]
@@ -102,6 +104,10 @@ class LocalSLAMWrapper:
         self.gaussian_reset  = train.get("gaussian_reset", 2001)
         self.size_threshold  = train.get("size_threshold", 20)
         self.max_gaussians   = train.get("max_gaussians", 80000)
+        # Maximum physical scale (meters) for any Gaussian axis.
+        # Prevents elongated streaks when depth coverage is sparse.
+        # 0 = disabled (default for indoor).  0.2 is good for outdoor.
+        self._max_scale_m    = train.get("max_gaussian_scale", 0.0)
         self.pose_window     = train.get("pose_window", 5)
 
         # Camera pose LR during mapping (0.5× tracking LR, matching MonoGS)
@@ -143,6 +149,9 @@ class LocalSLAMWrapper:
         self._fim_scales: Optional[torch.Tensor] = None  # [N, 3]
         self._fim_opac:   Optional[torch.Tensor] = None  # [N, 1]
 
+        # Last rendered image from tracking (for real-time visualization)
+        self._last_rendered_rgb: Optional[torch.Tensor] = None  # [3, H, W]
+
     # ─────────────────────────────────────────────────────────────────────────
     # Public API
     # ─────────────────────────────────────────────────────────────────────────
@@ -174,18 +183,36 @@ class LocalSLAMWrapper:
         viewpoint = self._build_camera(rgb, depth_np, uid)
         self._cameras[uid] = viewpoint
 
+        # Apply GT/GPS pose to the viewpoint BEFORE init or tracking so that
+        # Gaussians created on the first frame live in the correct world frame.
+        if gt_c2w is not None:
+            w2c = torch.linalg.inv(gt_c2w.to(self.device))
+            viewpoint.update_RT(w2c[:3, :3], w2c[:3, 3])
+
         if not self._initialized:
             self._initialize_map(uid, viewpoint, depth_np)
             self._frame_count += 1
             return
 
         # ── Tracking ──
-        if gt_c2w is not None:
-            # GPS-aided mode: use provided pose as initial guess, then refine
-            # via photometric + depth tracking optimisation.
-            w2c = torch.linalg.inv(gt_c2w.to(self.device))
-            viewpoint.update_RT(w2c[:3, :3], w2c[:3, 3])
-            # Run tracking from this initialization (skip CV motion model init)
+        gt_pose_mode = self.config["Training"].get("gt_pose_mode", False)
+        if gt_pose_mode and gt_c2w is not None:
+            # GT-pose mode: skip tracking entirely, use GPS/GT pose as-is.
+            # Only run a quick render to get visibility info for keyframe decision.
+            render_pkg = render(
+                viewpoint, self.gaussian_model, self.rasterizer_pipe, self.background,
+            )
+            if render_pkg is not None:
+                self._median_depth = get_median_depth(
+                    render_pkg["depth"], render_pkg["opacity"],
+                )
+                self._cur_visibility = (render_pkg["n_touched"] > 0).long()
+                self._store_rendered_viz(render_pkg["render"], render_pkg["opacity"], viewpoint)
+            self._current_camera = viewpoint
+            self._current_pose = self._camera_to_w2c(viewpoint)
+        elif gt_c2w is not None:
+            # GPS-aided mode: pose already set above; run tracking from this
+            # initialization (skip CV motion model init).
             self._tracking(uid, viewpoint, skip_motion_init=True)
         else:
             self._tracking(uid, viewpoint)
@@ -200,10 +227,15 @@ class LocalSLAMWrapper:
             self._kf_indices.append(uid)
             self._last_kf_idx = uid
 
-            # Add Gaussians from new keyframe
-            self.gaussian_model.extend_from_pcd_seq(
-                viewpoint, kf_id=uid, init=False, depthmap=depth_map,
-            )
+            # Add Gaussians from new keyframe — but only if under budget.
+            # When at budget, adding + immediately pruning causes churn and
+            # destroys well-trained Gaussians.  Better to let mapping refine
+            # what we have.
+            N_current = self.gaussian_model._xyz.shape[0]
+            if N_current < self.max_gaussians * 0.9:
+                self.gaussian_model.extend_from_pcd_seq(
+                    viewpoint, kf_id=uid, init=False, depthmap=depth_map,
+                )
 
             # Update window (MonoGS-style geometric eviction)
             self._current_window, removed_frame = self._add_to_window(
@@ -311,8 +343,9 @@ class LocalSLAMWrapper:
 
     def _initialize_map(self, uid: int, viewpoint: Camera, depth_np: np.ndarray) -> None:
         """Seed the Gaussian map from the first RGB-D frame and run init iterations."""
-        # Set camera to identity (ground truth for first frame)
-        viewpoint.update_RT(viewpoint.R_gt, viewpoint.T_gt)
+        # The viewpoint's pose is already set correctly by process_frame():
+        # - identity for free tracking (default _build_camera uses gt_T=eye(4))
+        # - GT/GPS pose when gt_c2w was provided
         self._current_camera = viewpoint
         self._current_pose = self._camera_to_w2c(viewpoint)
 
@@ -347,6 +380,17 @@ class LocalSLAMWrapper:
             loss = get_loss_mapping(
                 self.config, image, depth_r, viewpoint, opacity, initialization=True,
             )
+
+            # Sky clearance during init (same eroded-mask logic as mapping)
+            sky_clear_weight = self.config["Training"].get("sky_clear_weight", 0.0)
+            if sky_clear_weight > 0 and viewpoint.depth is not None:
+                gt_depth_t = torch.from_numpy(viewpoint.depth).to(
+                    dtype=torch.float32, device=self.device,
+                ).unsqueeze(0)  # [1, H, W]
+                sky_mask = gt_depth_t < 0.01
+                if sky_mask.any():
+                    loss = loss + sky_clear_weight * opacity[sky_mask].mean()
+
             loss.backward()
 
             with torch.no_grad():
@@ -362,6 +406,9 @@ class LocalSLAMWrapper:
                         self.init_gaussian_extent,
                         None,
                     )
+                    # Hard-prune sky Gaussians right after densification
+                    if self.config["Training"].get("sky_clear_weight", 0) > 0:
+                        self._cull_sky_gaussians(viewpoint)
 
                 if self._iteration_count == self.init_gaussian_reset or (
                     self._iteration_count == self.opt_params.densify_from_iter
@@ -370,8 +417,10 @@ class LocalSLAMWrapper:
 
                 self.gaussian_model.optimizer.step()
                 self.gaussian_model.optimizer.zero_grad(set_to_none=True)
+                self._clamp_scales()
 
         self._occ_aware_visibility[uid] = (render_pkg["n_touched"] > 0).long()
+        self._store_rendered_viz(render_pkg["render"], render_pkg["opacity"], viewpoint)
         self._initialized = True
 
     def _add_new_keyframe(self, uid: int, depth_np: np.ndarray) -> np.ndarray:
@@ -433,12 +482,18 @@ class LocalSLAMWrapper:
 
         self._cur_visibility = None
 
-        # GPS prior: when the initial pose comes from GPS, penalise large
-        # deviations (cam_rot_delta and cam_trans_delta are zero-initialised,
-        # so penalising their norm keeps the pose near the GPS measurement).
+        # GPS prior: penalise TOTAL drift from GPS pose, not just per-step delta.
+        # update_pose() resets cam_rot/trans_delta to zero each iteration, so
+        # penalising their norm only constraints the step size, not cumulative
+        # drift from GPS.  Instead, we save the GPS w2c and after each
+        # update_pose() call, compute the SE(3) displacement from GPS → current.
         gps_prior_weight = 0.0
+        gps_R_init = None
+        gps_T_init = None
         if skip_motion_init:
             gps_prior_weight = self.config["Training"].get("gps_prior_weight", 100.0)
+            gps_R_init = viewpoint.R.detach().clone()   # [3,3]
+            gps_T_init = viewpoint.T.detach().clone()   # [3]
 
         # For outdoor scenes with large depths, the converged threshold (1e-4)
         # can trigger prematurely because gradients are small. Run at least
@@ -459,7 +514,7 @@ class LocalSLAMWrapper:
             pose_optimizer.zero_grad()
             loss = get_loss_tracking(self.config, image, depth_r, opacity, viewpoint)
 
-            # GPS prior: keep pose close to GPS initialisation
+            # GPS prior: penalise per-step delta (keeps steps small)
             if gps_prior_weight > 0:
                 loss = loss + gps_prior_weight * (
                     viewpoint.cam_rot_delta.pow(2).sum()
@@ -472,6 +527,42 @@ class LocalSLAMWrapper:
                 pose_optimizer.step()
                 converged = update_pose(viewpoint)
 
+                # GPS prior: also clamp total drift from GPS pose.
+                # After update_pose, viewpoint.R/T is the current pose.
+                # Snap back any translation beyond max_gps_drift metres
+                # and any rotation beyond max_gps_rot_drift degrees.
+                if gps_R_init is not None:
+                    max_drift_m = self.config["Training"].get(
+                        "max_gps_drift", 0.5)
+                    max_rot_deg = self.config["Training"].get(
+                        "max_gps_rot_drift", 5.0)
+
+                    # Translation clamp
+                    t_drift = viewpoint.T - gps_T_init
+                    drift_norm = t_drift.norm().item()
+                    if drift_norm > max_drift_m:
+                        clamped_T = gps_T_init + t_drift * (max_drift_m / drift_norm)
+                        viewpoint.update_RT(viewpoint.R, clamped_T)
+
+                    # Rotation clamp: compute angle between current and GPS
+                    R_rel = viewpoint.R @ gps_R_init.T   # relative rotation
+                    cos_angle = ((R_rel.trace() - 1.0) / 2.0).clamp(-1.0, 1.0)
+                    angle_rad = torch.acos(cos_angle)
+                    angle_deg = angle_rad.item() * 180.0 / 3.14159265
+                    if angle_deg > max_rot_deg:
+                        # Snap back: scale axis-angle to max_rot_deg
+                        alpha = max_rot_deg / max(angle_deg, 1e-6)
+                        # Extract axis from R_rel via skew part
+                        if angle_rad.item() > 1e-6:
+                            axis = torch.stack([
+                                R_rel[2, 1] - R_rel[1, 2],
+                                R_rel[0, 2] - R_rel[2, 0],
+                                R_rel[1, 0] - R_rel[0, 1],
+                            ]) / (2.0 * torch.sin(angle_rad))
+                            omega_clamped = axis * (angle_rad * alpha)
+                            R_clamped = SO3_exp(omega_clamped) @ gps_R_init
+                            viewpoint.update_RT(R_clamped, viewpoint.T)
+
             if converged and itr >= min_tracking_itr:
                 break
 
@@ -481,6 +572,7 @@ class LocalSLAMWrapper:
         self._cur_visibility = (render_pkg["n_touched"] > 0).long()
         self._current_camera = viewpoint
         self._current_pose = self._camera_to_w2c(viewpoint)
+        self._store_rendered_viz(render_pkg["render"], render_pkg["opacity"], viewpoint)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Private – Keyframe decision
@@ -490,6 +582,12 @@ class LocalSLAMWrapper:
         if self._last_kf_idx == uid:
             return False
         if last_kf_vis is None or cur_vis is None:
+            return True
+
+        # Forced keyframe fallback: if too many frames without a KF, force one.
+        # This prevents agents that barely move from staying stuck on init view.
+        kf_max_interval = self.config["Training"].get("kf_max_interval", 15)
+        if uid - self._last_kf_idx >= kf_max_interval:
             return True
 
         curr = self._cameras[uid]
@@ -647,16 +745,50 @@ class LocalSLAMWrapper:
                 loss_mapping = loss_mapping + get_loss_mapping(
                     self.config, image, depth_r, viewpoint, opacity,
                 )
+
+                # ── Sky clearance: penalize Gaussian presence where depth is missing ──
+                # Depth-invalid pixels (sky, distant objects) have no geometric support.
+                # Without this, Gaussians grow into the sky and form opaque dark blobs.
+                # The per-pixel opacity map is differentiable w.r.t. Gaussian positions,
+                # scales, and opacities, so this loss pushes Gaussians to be transparent
+                # in unsupported regions.
+                #
+                # Combined with _cull_sky_gaussians() hard prune (runs after
+                # densification), this provides two-pronged sky removal:
+                #   1) Gradient pressure (this loss) — continuous, smooth
+                #   2) Hard prune (_cull_sky_gaussians) — immediate, discrete
+                sky_clear_weight = self.config["Training"].get("sky_clear_weight", 0.0)
+                if sky_clear_weight > 0 and viewpoint.depth is not None:
+                    gt_depth_t = torch.from_numpy(viewpoint.depth).to(
+                        dtype=torch.float32, device=self.device,
+                    ).unsqueeze(0)  # [1, H, W]
+                    sky_mask = gt_depth_t < 0.01  # True where depth is missing
+                    if sky_mask.any():
+                        loss_mapping = loss_mapping + sky_clear_weight * opacity[sky_mask].mean()
+
                 viewspace_acm.append(viewspace_pts)
                 vis_acm.append(vis_filter)
                 radii_acm.append(radii)
                 n_touched_acm.append(n_touched)
 
-            # Isotropic regularisation (same as MonoGS)
+            # Isotropic regularisation — prevent flat cutout Gaussians
             scaling = self.gaussian_model.get_scaling
             if scaling.shape[0] > 0:
+                iso_weight = self.config["Training"].get("iso_loss_weight", 10.0)
+                # Standard: penalise deviation from mean scale
                 iso_loss = torch.abs(scaling - scaling.mean(dim=1, keepdim=True))
-                loss_mapping = loss_mapping + 10 * iso_loss.mean()
+                loss_mapping = loss_mapping + iso_weight * iso_loss.mean()
+                # Stronger: penalise max/min ratio (prevents flat discs)
+                scale_max = scaling.max(dim=1).values
+                scale_min = scaling.min(dim=1).values.clamp(min=1e-6)
+                ratio_loss = (scale_max / scale_min - 1.0).clamp(min=0).mean()
+                loss_mapping = loss_mapping + iso_weight * 0.5 * ratio_loss
+
+            # Opacity regularisation — prevent fully-opaque blobs that block view
+            opacity_reg_weight = self.config["Training"].get("opacity_reg_weight", 0.0)
+            if opacity_reg_weight > 0:
+                opacities = self.gaussian_model.get_opacity
+                loss_mapping = loss_mapping + opacity_reg_weight * opacities.mean()
 
             loss_mapping.backward()
 
@@ -684,20 +816,45 @@ class LocalSLAMWrapper:
                     == self.gaussian_update_offset
                 )
                 if update_gaussian:
-                    self.gaussian_model.densify_and_prune(
-                        self.opt_params.densify_grad_threshold,
-                        self.gaussian_th,
-                        self.gaussian_extent,
-                        self.size_threshold,
-                    )
+                    # Skip densification (clone+split) when near budget —
+                    # densification wastes Gaussians in already-covered areas
+                    # while new viewpoints starve for coverage.
+                    N_before = self.gaussian_model._xyz.shape[0]
+                    near_budget = N_before > self.max_gaussians * 0.8
+                    if near_budget:
+                        # Only prune, skip clone+split
+                        prune_mask = (
+                            self.gaussian_model.get_opacity < self.gaussian_th
+                        ).squeeze()
+                        big_ws = (
+                            self.gaussian_model.get_scaling.max(dim=1).values
+                            > 0.1 * self.gaussian_extent
+                        )
+                        big_vs = (
+                            self.gaussian_model.max_radii2D > self.size_threshold
+                        )
+                        prune_mask = prune_mask | big_ws | big_vs
+                        self.gaussian_model.prune_points(prune_mask)
+                    else:
+                        self.gaussian_model.densify_and_prune(
+                            self.opt_params.densify_grad_threshold,
+                            self.gaussian_th,
+                            self.gaussian_extent,
+                            self.size_threshold,
+                        )
                     # Hard cap to prevent OOM on multi-agent runs
+                    # Use view-frustum-aware pruning: first prune Gaussians
+                    # behind the camera or very far away, then fall back to opacity
                     N = self.gaussian_model._xyz.shape[0]
                     if N > self.max_gaussians:
-                        opac = self.gaussian_model.get_opacity.squeeze(-1)
-                        _, keep_idx = opac.topk(self.max_gaussians)
-                        keep = torch.zeros(N, dtype=torch.bool, device=opac.device)
-                        keep[keep_idx] = True
-                        self.gaussian_model.prune_points(~keep)
+                        N = self._prune_to_budget(viewpoint_stack[-1])
+
+                    # Hard-prune Gaussians in depth-invalid (sky) regions.
+                    # This catches newly-created sky Gaussians from
+                    # densification BEFORE they accumulate.
+                    if self.config["Training"].get("sky_clear_weight", 0) > 0:
+                        for _vp in viewpoint_stack:
+                            self._cull_sky_gaussians(_vp)
 
                 if (self._iteration_count % self.gaussian_reset) == 0 and not update_gaussian:
                     self.gaussian_model.reset_opacity_nonvisible(vis_acm)
@@ -705,6 +862,7 @@ class LocalSLAMWrapper:
                 # Step Gaussian optimizer
                 self.gaussian_model.optimizer.step()
                 self.gaussian_model.optimizer.zero_grad(set_to_none=True)
+                self._clamp_scales()
                 self.gaussian_model.update_learning_rate(self._iteration_count)
 
                 # Step keyframe pose optimizer + apply SE(3) update
@@ -716,6 +874,163 @@ class LocalSLAMWrapper:
                         if vp.uid == 0:
                             continue
                         update_pose(vp)
+
+        # Re-render current viewpoint after mapping to update visualization
+        # with the latest Gaussian state (post-optimization).
+        if viewpoint_stack:
+            curr_vp = viewpoint_stack[0]
+            with torch.no_grad():
+                rp = render(curr_vp, self.gaussian_model, self.rasterizer_pipe, self.background)
+                if rp is not None:
+                    self._store_rendered_viz(rp["render"], rp["opacity"], curr_vp)
+
+    def _clamp_scales(self) -> None:
+        """Clamp Gaussian scales to prevent elongated streaks in sparse-depth scenes."""
+        if self._max_scale_m <= 0:
+            return
+        with torch.no_grad():
+            # _scaling is in log-space: exp(_scaling) = actual scale
+            max_log = math.log(self._max_scale_m)
+            self.gaussian_model._scaling.data.clamp_(max=max_log)
+
+    def _cull_sky_gaussians(self, viewpoint: Camera) -> int:
+        """Hard-prune Gaussians whose mean projects to a depth-invalid pixel.
+
+        The sky clearance loss pushes Gaussian opacity down via gradients, but
+        this is too slow relative to densification (which creates new sky
+        Gaussians every ``gaussian_update_every`` iterations).  This method
+        provides an immediate, non-gradient intervention: project every
+        Gaussian mean into the current camera, look up the depth at that
+        pixel, and **prune** (fully remove) any Gaussian that lands on a
+        depth-invalid pixel.
+
+        Only prunes Gaussians that:
+          1. Are in front of the camera (z > 0)
+          2. Fall within the image bounds
+          3. Land on a pixel where depth is invalid (< 0.01 m)
+
+        Returns the number of pruned Gaussians.
+        """
+        if viewpoint.depth is None:
+            return 0
+        N = self.gaussian_model._xyz.shape[0]
+        if N == 0:
+            return 0
+
+        with torch.no_grad():
+            w2c = getWorld2View2(viewpoint.R, viewpoint.T).to(self.device)
+            xyz_h = torch.cat([
+                self.gaussian_model._xyz,
+                torch.ones(N, 1, device=self.device),
+            ], dim=1)
+            pts_cam = (w2c @ xyz_h.T).T[:, :3]  # [N, 3]
+
+            z = pts_cam[:, 2]
+            in_front = z > 0.01
+
+            # Project to pixel coordinates
+            u = viewpoint.fx * pts_cam[:, 0] / z.clamp(min=1e-6) + viewpoint.cx
+            v = viewpoint.fy * pts_cam[:, 1] / z.clamp(min=1e-6) + viewpoint.cy
+
+            u_px = u.long()
+            v_px = v.long()
+
+            # Bounds check
+            in_bounds = (
+                (u_px >= 0) & (u_px < viewpoint.image_width)
+                & (v_px >= 0) & (v_px < viewpoint.image_height)
+            )
+
+            # Look up depth at projected pixel
+            depth_map = torch.from_numpy(viewpoint.depth).to(self.device)  # [H, W]
+            # Clamp for safe indexing (only used where in_bounds is True)
+            u_safe = u_px.clamp(0, viewpoint.image_width - 1)
+            v_safe = v_px.clamp(0, viewpoint.image_height - 1)
+            depth_at_gauss = depth_map[v_safe, u_safe]
+
+            # Prune: in front of camera, within image, depth-invalid pixel
+            sky_mask = in_front & in_bounds & (depth_at_gauss < 0.01)
+
+            n_pruned = sky_mask.sum().item()
+            if n_pruned > 0:
+                self.gaussian_model.prune_points(sky_mask)
+
+        return n_pruned
+
+    def _store_rendered_viz(self, render_rgb: torch.Tensor,
+                            opacity: torch.Tensor,
+                            viewpoint: Camera) -> None:
+        """Store rendered image for visualization, optionally alpha-composited.
+
+        When ``alpha_composite_viz`` is enabled, pixels with low accumulated
+        Gaussian opacity (e.g. sky regions with no depth support) are filled
+        from the GT input frame instead of showing background colour.  This
+        is standard practice in real-time SLAM visualization: the live camera
+        feed fills areas where the 3DGS map has no coverage.
+        """
+        rendered = render_rgb.detach().clamp(0, 1)  # [3, H, W]
+        if self.config["Training"].get("alpha_composite_viz", False):
+            gt_img = viewpoint.original_image  # [3, H, W]
+            if gt_img is not None:
+                alpha_map = opacity.detach().clamp(0, 1)  # [1, H, W]
+                rendered = alpha_map * rendered + (1.0 - alpha_map) * gt_img.to(rendered.device)
+                rendered = rendered.clamp(0, 1)
+        self._last_rendered_rgb = rendered
+
+    def _prune_to_budget(self, current_cam) -> int:
+        """View-frustum-aware pruning when over max_gaussians budget.
+
+        Priority for removal:
+          1. Behind camera (z < 0 in camera frame)
+          2. Very far away (z > 4 × median_depth)
+          3. Lowest opacity (classic fallback)
+
+        Returns new Gaussian count.
+        """
+        N = self.gaussian_model._xyz.shape[0]
+        if N <= self.max_gaussians:
+            return N
+
+        with torch.no_grad():
+            # Transform Gaussian means into camera frame
+            w2c = getWorld2View2(current_cam.R, current_cam.T).to(self.device)
+            xyz_h = torch.cat([
+                self.gaussian_model._xyz,
+                torch.ones(N, 1, device=self.device),
+            ], dim=1)
+            pts_cam = (w2c @ xyz_h.T).T[:, :3]  # [N, 3]
+
+            # Step 1: Mark behind-camera Gaussians for removal
+            behind = pts_cam[:, 2] < 0.0
+
+            # Step 2: Mark very-far-away Gaussians for removal
+            med_d = max(self._median_depth, 1.0)
+            far = pts_cam[:, 2] > 4.0 * med_d
+
+            removable = behind | far
+
+            # Only prune if we keep enough Gaussians after removal
+            n_removable = removable.sum().item()
+            n_keep_after = N - n_removable
+            if n_removable > 0 and n_keep_after >= self.max_gaussians * 0.3:
+                self.gaussian_model.prune_points(removable)
+                N = self.gaussian_model._xyz.shape[0]
+
+            # Step 3: If still over budget, use composite score
+            # Prefer keeping Gaussians with high opacity AND many observations
+            if N > self.max_gaussians:
+                opac = self.gaussian_model.get_opacity.squeeze(-1)  # [N]
+                n_obs = self.gaussian_model.n_obs.to(self.device).float()  # [N]
+                # Composite: opacity × (1 + log(1 + n_obs))
+                # Well-observed Gaussians are more important to keep
+                score = opac * (1.0 + torch.log1p(n_obs))
+                _, keep_idx = score.topk(self.max_gaussians)
+                keep = torch.zeros(N, dtype=torch.bool, device=opac.device)
+                keep[keep_idx] = True
+                self.gaussian_model.prune_points(~keep)
+                N = self.gaussian_model._xyz.shape[0]
+
+        return N
 
     # ─────────────────────────────────────────────────────────────────────────
     # Private – Pose helpers
