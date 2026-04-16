@@ -3,6 +3,7 @@ outputs/
 docs/
 baselines/
 repos/
+Figure/
 instruction-guideline.md
 
 # Python cache
