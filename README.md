@@ -24,7 +24,7 @@
 
 Each video shows side-by-side rendered views from both agents as they independently explore the scene, building and refining their 3DGS maps in real time.
 
-> **Note:** These videos were produced at an earlier commit. To reproduce the exact results, checkout commit `7a42c0e` (0.00060m) or the corresponding tag.
+> **Note:** These videos were produced at an earlier commit. To reproduce the exact results (0.00060m), please checkout the corresponding tag.
 
 ---
 
