@@ -5,26 +5,28 @@
 ## Demo Videos
 
 ### Replica Apart-0 (2 agents, N frames)
+
 <p align="center">
   <img src="media/apart0_100frames_viz.gif" width="100%" alt="Replica Apart-0 Demo"/>
 </p>
 
 ### Aria Room-0 (2 agents, N frames)
+
 <p align="center">
   <img src="media/aria_room0_100frames_viz.gif" width="100%" alt="Aria Room-0 Demo"/>
 </p>
 
 ### Replica Office-0 (2 agents, N frames)
+
 <p align="center">
   <img src="media/office0_200frames_viz.gif" width="100%" alt="Replica Office-0 Demo"/>
 </p>
 
 Each video shows side-by-side rendered views from both agents as they independently explore the scene, building and refining their 3DGS maps in real time.
 
-> **Note:** These videos were produced at an earlier commit. To reproduce the exact results, checkout commit `7a42c0e` (0.0060m) or the corresponding tag.
+> **Note:** These videos were produced at an earlier commit. To reproduce the exact results, checkout commit `7a42c0e` (0.00060m) or the corresponding tag.
 
 ---
-
 
 ## Project Structure
 
@@ -126,22 +128,23 @@ PYTHONPATH="" python experiments/run_duag_c.py \
 
 ### Available Configs
 
-| Config | Dataset | Scene | Frames | Agents |
-|--------|---------|-------|--------|--------|
-| `replica_apart0_quick.yaml` | Replica | Apart-0 | 2500 | 2 |
-| `replica_apart0.yaml` | Replica | Apart-0 | 2500 | 2 |
-| `replica_apart1.yaml` | Replica | Apart-1 | 2500 | 2 |
-| `replica_apart2.yaml` | Replica | Apart-2 | 2500 | 2 |
-| `replica_office0_quick.yaml` | Replica | Office-0 | 1500 | 2 |
-| `replica_office0.yaml` | Replica | Office-0 | 2500 | 2 |
-| `aria_multiagent_duag_c.yaml` | Aria | Multi-room | full | 3 |
-| `s3e_duag_c.yaml` | S3E | Outdoor | full | 3 |
-| `kimera_campus_duag_c.yaml` | Kimera | Campus | full | 6 |
-| `ablation_uniform_weights.yaml` | Replica | Multi-scene | full | 2 |
+| Config                          | Dataset | Scene       | Frames | Agents |
+| ------------------------------- | ------- | ----------- | ------ | ------ |
+| `replica_apart0_quick.yaml`     | Replica | Apart-0     | 2500   | 2      |
+| `replica_apart0.yaml`           | Replica | Apart-0     | 2500   | 2      |
+| `replica_apart1.yaml`           | Replica | Apart-1     | 2500   | 2      |
+| `replica_apart2.yaml`           | Replica | Apart-2     | 2500   | 2      |
+| `replica_office0_quick.yaml`    | Replica | Office-0    | 1500   | 2      |
+| `replica_office0.yaml`          | Replica | Office-0    | 2500   | 2      |
+| `aria_multiagent_duag_c.yaml`   | Aria    | Multi-room  | full   | 3      |
+| `s3e_duag_c.yaml`               | S3E     | Outdoor     | full   | 3      |
+| `kimera_campus_duag_c.yaml`     | Kimera  | Campus      | full   | 6      |
+| `ablation_uniform_weights.yaml` | Replica | Multi-scene | full   | 2      |
 
 ### Outputs
 
 Results are saved to `outputs/`:
+
 - `outputs/results/<experiment>.json` — metrics (ATE, PSNR, SSIM, LPIPS, ECE)
 - `outputs/trajectories/` — estimated and GT trajectories (TUM format)
 - `outputs/renders/` — rendered images per agent
@@ -168,13 +171,11 @@ python experiments/analyze_results.py
 
 ## Datasets
 
-| Dataset | Type | Agents | Scenes | Download |
-|---------|------|--------|--------|----------|
-| Replica-Multiagent | Synthetic indoor | 2 | 5 (Apart-0/1/2, Office-0/2) | `bash scripts/download_replica.sh` |
-| Aria-Multiagent | Real indoor (Aria glasses) | 3 | 3 | `bash scripts/download_aria.sh` |
-| S3E | Real outdoor (3 UGVs) | 3 | 18 | `bash scripts/download_s3e.sh` |
-| Kimera-Multi Campus | Real outdoor (campus) | 6 | 2 | `bash scripts/download_kimera.sh` |
+| Dataset             | Type                       | Agents | Scenes                      | Download                           |
+| ------------------- | -------------------------- | ------ | --------------------------- | ---------------------------------- |
+| Replica-Multiagent  | Synthetic indoor           | 2      | 5 (Apart-0/1/2, Office-0/2) | `bash scripts/download_replica.sh` |
+| Aria-Multiagent     | Real indoor (Aria glasses) | 3      | 3                           | `bash scripts/download_aria.sh`    |
+| S3E                 | Real outdoor (3 UGVs)      | 3      | 18                          | `bash scripts/download_s3e.sh`     |
+| Kimera-Multi Campus | Real outdoor (campus)      | 6      | 2                           | `bash scripts/download_kimera.sh`  |
 
 ---
-
-
